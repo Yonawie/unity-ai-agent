@@ -1,0 +1,19 @@
+{
+    "name": "UnityAgent.Editor",
+    "rootNamespace": "UnityAgent.Editor",
+    "references": [
+        "UnityEditor.UIElementsModule",
+        "UnityEngine.UIElementsModule"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,47 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="AgentWindow.uss" />
+    <ui:VisualElement name="root" class="root">
+        <ui:VisualElement class="toolbar">
+            <ui:Label text="Unity AI Agent" class="title" />
+            <ui:EnumField name="mode-field" label="Mode" />
+            <ui:Label name="status-label" text="Idle" class="status" />
+        </ui:VisualElement>
+
+        <ui:VisualElement class="settings-row">
+            <ui:TextField name="base-url-field" label="Base URL" />
+            <ui:TextField name="model-field" label="Model" />
+            <ui:Button name="test-connection-button" text="Test Connection" />
+        </ui:VisualElement>
+
+        <ui:VisualElement class="main-split">
+            <ui:VisualElement class="left-pane">
+                <ui:Label text="Conversation" class="section-title" />
+                <ui:ScrollView name="chat-scroll" class="chat-scroll">
+                    <ui:VisualElement name="chat-container" />
+                </ui:ScrollView>
+                <ui:VisualElement class="input-row">
+                    <ui:TextField name="input-field" multiline="true" class="input-field" />
+                    <ui:VisualElement class="input-buttons">
+                        <ui:Button name="send-button" text="Send" class="primary" />
+                        <ui:Button name="stop-button" text="Stop" />
+                        <ui:Button name="clear-button" text="Clear" />
+                        <ui:Button name="undo-button" text="Undo Task" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="right-pane">
+                <ui:Label text="Plan" class="section-title" />
+                <ui:ScrollView name="plan-scroll" class="side-scroll">
+                    <ui:VisualElement name="plan-container" />
+                </ui:ScrollView>
+                <ui:Label text="Actions" class="section-title" />
+                <ui:ScrollView name="actions-scroll" class="side-scroll">
+                    <ui:VisualElement name="actions-container" />
+                </ui:ScrollView>
+                <ui:Label text="Errors / Connection" class="section-title" />
+                <ui:Label name="error-label" text="" class="error-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

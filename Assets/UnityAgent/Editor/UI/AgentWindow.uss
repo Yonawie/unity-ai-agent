@@ -1,0 +1,170 @@
+.root {
+    flex-grow: 1;
+    background-color: #1e1f22;
+    color: #e8e8e8;
+    padding: 8px;
+    font-size: 12px;
+}
+
+.toolbar {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.title {
+    font-size: 16px;
+    -unity-font-style: bold;
+    margin-right: 16px;
+    color: #7dd3fc;
+}
+
+.status {
+    margin-left: auto;
+    padding: 4px 10px;
+    background-color: #2b2d31;
+    border-radius: 4px;
+    color: #fbbf24;
+}
+
+.settings-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.settings-row > * {
+    margin-right: 8px;
+    flex-grow: 1;
+}
+
+.main-split {
+    flex-direction: row;
+    flex-grow: 1;
+    min-height: 420px;
+}
+
+.left-pane {
+    flex-grow: 3;
+    flex-direction: column;
+    margin-right: 8px;
+}
+
+.right-pane {
+    flex-grow: 2;
+    flex-direction: column;
+    min-width: 240px;
+}
+
+.section-title {
+    -unity-font-style: bold;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    color: #a5b4fc;
+}
+
+.chat-scroll {
+    flex-grow: 1;
+    background-color: #111214;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #2f333a;
+    padding: 6px;
+    min-height: 260px;
+}
+
+.side-scroll {
+    flex-grow: 1;
+    background-color: #111214;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #2f333a;
+    padding: 6px;
+    min-height: 100px;
+    margin-bottom: 6px;
+}
+
+.chat-bubble {
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    white-space: normal;
+}
+
+.chat-user {
+    background-color: #1d4ed8;
+}
+
+.chat-assistant {
+    background-color: #27272a;
+}
+
+.chat-tool {
+    background-color: #14532d;
+}
+
+.chat-error {
+    background-color: #7f1d1d;
+}
+
+.bubble-role {
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+    color: #cbd5e1;
+}
+
+.input-row {
+    margin-top: 8px;
+    flex-direction: column;
+}
+
+.input-field {
+    min-height: 64px;
+    margin-bottom: 6px;
+}
+
+.input-buttons {
+    flex-direction: row;
+}
+
+.input-buttons > ui|Button {
+    margin-right: 6px;
+}
+
+.primary {
+    background-color: #2563eb;
+}
+
+.plan-item {
+    margin-bottom: 4px;
+    padding: 4px 6px;
+    background-color: #1f2937;
+    border-radius: 4px;
+}
+
+.plan-running {
+    border-left-width: 3px;
+    border-left-color: #fbbf24;
+}
+
+.plan-done {
+    border-left-width: 3px;
+    border-left-color: #22c55e;
+}
+
+.plan-failed {
+    border-left-width: 3px;
+    border-left-color: #ef4444;
+}
+
+.action-item {
+    margin-bottom: 3px;
+    white-space: normal;
+    color: #d1d5db;
+}
+
+.error-label {
+    white-space: normal;
+    color: #fca5a5;
+    min-height: 40px;
+}
