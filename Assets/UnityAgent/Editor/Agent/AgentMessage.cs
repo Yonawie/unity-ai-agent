@@ -66,6 +66,7 @@ namespace UnityAgent.Editor.Agent
         public int CurrentStep;
         public int FixAttempts;
         public bool ResumeAfterReload;
+        public string StreamingText;
         public long UpdatedUtcTicks = DateTime.UtcNow.Ticks;
     }
 }

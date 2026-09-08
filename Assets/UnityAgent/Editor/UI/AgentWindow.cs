@@ -254,6 +254,18 @@ namespace UnityAgent.Editor.UI
                 _chatContainer.Add(bubble);
             }
 
+            if (!string.IsNullOrEmpty(session.StreamingText))
+            {
+                var streamBubble = new VisualElement();
+                streamBubble.AddToClassList("chat-bubble");
+                streamBubble.AddToClassList("chat-assistant");
+                var role = new Label("assistant (streaming…)");
+                role.AddToClassList("bubble-role");
+                streamBubble.Add(role);
+                streamBubble.Add(new Label(TrimForUi(session.StreamingText)));
+                _chatContainer.Add(streamBubble);
+            }
+
             _chatScroll?.schedule.Execute(() => _chatScroll.scrollOffset = new Vector2(0, float.MaxValue));
         }
 

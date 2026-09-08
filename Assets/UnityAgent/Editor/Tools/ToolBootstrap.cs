@@ -1,4 +1,6 @@
 using UnityAgent.Editor.Tools.Assets;
+using UnityAgent.Editor.Tools.CameraTools;
+using UnityAgent.Editor.Tools.Capture;
 using UnityAgent.Editor.Tools.Console;
 using UnityAgent.Editor.Tools.EditorTools;
 using UnityAgent.Editor.Tools.GameObjects;
@@ -8,6 +10,7 @@ using UnityAgent.Editor.Tools.Prefabs;
 using UnityAgent.Editor.Tools.Scene;
 using UnityAgent.Editor.Tools.Scripts;
 using UnityAgent.Editor.Tools.SelectionTools;
+using UnityAgent.Editor.Tools.UI;
 
 namespace UnityAgent.Editor.Tools
 {
@@ -51,6 +54,23 @@ namespace UnityAgent.Editor.Tools
             registry.Register(new CreateMaterialTool());
             registry.Register(new AssignMaterialTool());
             registry.Register(new SetMaterialColorTool());
+
+            // UI (UGUI)
+            registry.Register(new CreateCanvasTool());
+            registry.Register(new CreateUiTextTool());
+            registry.Register(new CreateUiButtonTool());
+            registry.Register(new CreateUiPanelTool());
+            registry.Register(new SetRectTransformTool());
+
+            // Camera / lights
+            registry.Register(new SetupMainCameraTool());
+            registry.Register(new CreateThirdPersonCameraTool());
+            registry.Register(new CreateLightTool());
+
+            // Capture
+            registry.Register(new CaptureSceneViewTool());
+            registry.Register(new CaptureGameViewTool());
+            registry.Register(new ListCapturesTool());
 
             // Scripts
             registry.Register(new ListScriptsTool());

@@ -114,9 +114,17 @@ namespace UnityAgent.Editor.Safety
                 case "set_layer":
                 case "set_selection":
                 case "focus_object":
+                case "create_canvas":
+                case "create_ui_text":
+                case "create_ui_button":
+                case "create_ui_panel":
+                case "set_rect_transform":
+                case "setup_main_camera":
+                case "create_third_person_camera":
+                case "create_light":
                     if (!s.AllowSceneModification &&
-                        (tool.Name == "instantiate_prefab" || tool.Name == "unpack_prefab" ||
-                         tool.Name == "assign_material" || tool.Name == "set_tag" || tool.Name == "set_layer"))
+                        tool.Name != "set_selection" && tool.Name != "focus_object" &&
+                        tool.Name != "set_material_color")
                     {
                         error = "Scene modification is disabled in AI Agent settings.";
                         return false;

@@ -3,7 +3,9 @@
     "rootNamespace": "UnityAgent.Editor",
     "references": [
         "UnityEditor.UIElementsModule",
-        "UnityEngine.UIElementsModule"
+        "UnityEngine.UIElementsModule",
+        "UnityEngine.UI",
+        "UnityEditor.UI"
     ],
     "includePlatforms": [
         "Editor"

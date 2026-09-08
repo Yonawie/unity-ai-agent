@@ -78,8 +78,15 @@ namespace UnityAgent.Editor.Agent
                     Temperature = settings.Temperature,
                     JsonMode = true,
                     SystemPrompt = systemPrompt,
-                    Messages = llmMessages.Select(m => new LLMMessage(m.Role, m.Content)).ToList()
+                    Messages = llmMessages.Select(m => new LLMMessage(m.Role, m.Content)).ToList(),
+                    OnPartial = chunk =>
+                    {
+                        session.StreamingText = (session.StreamingText ?? string.Empty) + chunk;
+                        onChanged?.Invoke();
+                    }
                 };
+
+                session.StreamingText = string.Empty;
 
                 // Inject fresh minimal context as a hidden user note each few steps.
                 if (step == 0 || step % 4 == 0)
@@ -90,6 +97,7 @@ namespace UnityAgent.Editor.Agent
 
                 AgentLogger.Info($"Agent step {step + 1}: sending LLM request");
                 var response = await provider.SendAsync(request, token);
+                session.StreamingText = null;
                 if (!response.Success)
                 {
                     SetStatus(session, AgentStatus.Failed, response.Error, onChanged);

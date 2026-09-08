@@ -70,6 +70,21 @@ ollama pull qwen2.5-coder:7b
 Создай Cube, назови его PlayerCube, добавь Rigidbody и создай скрипт, который позволяет двигать его клавишами WASD.
 ```
 
+```text
+Сделай простой UI: Canvas, панель и кнопку Play.
+```
+
+```text
+Поставь third-person камеру на Player и добавь Directional Light. Потом сделай скрин Scene view.
+```
+
+## New capabilities (v0.3)
+
+- UI: `create_canvas`, `create_ui_text`, `create_ui_button`, `create_ui_panel`, `set_rect_transform`
+- Camera/Light: `setup_main_camera`, `create_third_person_camera`, `create_light`
+- Capture: `capture_scene_view`, `capture_game_view`, `list_captures` (saves under `Library/UnityAgent/Captures/`)
+- Streaming: live assistant text in the Agent window (toggle **Enable LLM Streaming**)
+
 ## New capabilities (v0.2)
 
 - Prefabs: `create_prefab`, `instantiate_prefab`, `unpack_prefab`, `get_prefab_info`

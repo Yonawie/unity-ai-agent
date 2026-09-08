@@ -151,6 +151,9 @@ namespace UnityAgent.Editor.Context
             sb.AppendLine("When adding a newly created script component, use the class name as componentType after successful compile.");
             sb.AppendLine("For movement controllers, prefer detect_input_setup then create_wasd_controller_script.");
             sb.AppendLine("For visual setup, prefer create_material + assign_material. For reusable objects, create_prefab / instantiate_prefab.");
+            sb.AppendLine("For HUD/menus use create_canvas / create_ui_button / create_ui_text / create_ui_panel.");
+            sb.AppendLine("For third-person view use create_third_person_camera; for lighting use create_light.");
+            sb.AppendLine("After major scene changes, optionally capture_scene_view or capture_game_view to verify.");
             sb.AppendLine("Use preview_script_patch before risky edits when helpful.");
             sb.AppendLine();
             sb.AppendLine("Available tools:");

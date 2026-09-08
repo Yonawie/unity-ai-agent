@@ -89,14 +89,17 @@ namespace UnityAgent.Editor.LLM
                 foreach (var msg in request.Messages)
                     messages.Add(new Dictionary<string, object> { ["role"] = msg.Role, ["content"] = msg.Content ?? "" });
 
+                var useStream = request.OnPartial != null && AgentSettings.Current.EnableStreaming;
+
                 var body = new Dictionary<string, object>
                 {
                     ["model"] = model,
                     ["temperature"] = request.Temperature,
-                    ["messages"] = messages
+                    ["messages"] = messages,
+                    ["stream"] = useStream
                 };
 
-                if (request.JsonMode)
+                if (request.JsonMode && !useStream)
                 {
                     body["response_format"] = new Dictionary<string, object> { ["type"] = "json_object" };
                 }
@@ -112,11 +115,21 @@ namespace UnityAgent.Editor.LLM
 
                 using var req = new UnityWebRequest(endpoint, "POST");
                 req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
-                req.downloadHandler = new DownloadHandlerBuffer();
                 req.SetRequestHeader("Content-Type", "application/json");
                 if (!string.IsNullOrEmpty(_apiKey))
                     req.SetRequestHeader("Authorization", "Bearer " + _apiKey);
                 req.timeout = _timeoutSeconds;
+
+                OpenAiStreamHandler streamHandler = null;
+                if (useStream)
+                {
+                    streamHandler = new OpenAiStreamHandler(chunk => request.OnPartial?.Invoke(chunk));
+                    req.downloadHandler = streamHandler;
+                }
+                else
+                {
+                    req.downloadHandler = new DownloadHandlerBuffer();
+                }
 
                 var op = req.SendWebRequest();
                 while (!op.isDone)
@@ -126,19 +139,32 @@ namespace UnityAgent.Editor.LLM
                 }
 
                 sw.Stop();
-                var raw = req.downloadHandler?.text;
-                AgentLogger.Llm("response", raw);
-
                 if (req.result != UnityWebRequest.Result.Success)
                 {
                     return new LLMResponse
                     {
                         Success = false,
                         Error = $"Request failed: {req.error}",
-                        Raw = raw,
+                        Raw = useStream ? streamHandler?.RawText : req.downloadHandler?.text,
                         DurationMs = sw.ElapsedMilliseconds
                     };
                 }
+
+                if (useStream)
+                {
+                    AgentLogger.Llm("response", streamHandler.Content);
+                    return new LLMResponse
+                    {
+                        Success = true,
+                        Content = streamHandler.Content,
+                        Raw = streamHandler.RawText,
+                        DurationMs = sw.ElapsedMilliseconds,
+                        WasStreamed = true
+                    };
+                }
+
+                var raw = req.downloadHandler?.text;
+                AgentLogger.Llm("response", raw);
 
                 var root = AgentJson.ParseObject(raw);
                 var choices = AgentJson.GetArray(root, "choices");
@@ -165,6 +191,61 @@ namespace UnityAgent.Editor.LLM
             {
                 AgentLogger.Error($"OpenAICompatibleProvider error: {ex}");
                 return new LLMResponse { Success = false, Error = ex.Message, DurationMs = sw.ElapsedMilliseconds };
+            }
+        }
+
+        sealed class OpenAiStreamHandler : DownloadHandlerScript
+        {
+            readonly Action<string> _onPartial;
+            readonly StringBuilder _lineBuf = new StringBuilder();
+            readonly StringBuilder _content = new StringBuilder();
+            readonly StringBuilder _raw = new StringBuilder();
+
+            public string Content => _content.ToString();
+            public string RawText => _raw.ToString();
+
+            public OpenAiStreamHandler(Action<string> onPartial) : base(new byte[64 * 1024])
+            {
+                _onPartial = onPartial;
+            }
+
+            protected override bool ReceiveData(byte[] data, int dataLength)
+            {
+                if (data == null || dataLength == 0) return false;
+                var text = Encoding.UTF8.GetString(data, 0, dataLength);
+                _raw.Append(text);
+                _lineBuf.Append(text);
+
+                while (true)
+                {
+                    var s = _lineBuf.ToString();
+                    var nl = s.IndexOf('\n');
+                    if (nl < 0) break;
+                    var line = s.Substring(0, nl).TrimEnd('\r');
+                    _lineBuf.Remove(0, nl + 1);
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (!line.StartsWith("data:", StringComparison.Ordinal)) continue;
+                    var payload = line.Substring(5).Trim();
+                    if (payload == "[DONE]") continue;
+                    try
+                    {
+                        var obj = AgentJson.ParseObject(payload);
+                        var choices = AgentJson.GetArray(obj, "choices");
+                        if (choices == null || choices.Count == 0) continue;
+                        if (choices[0] is not Dictionary<string, object> choice) continue;
+                        var delta = AgentJson.GetObject(choice, "delta");
+                        var piece = AgentJson.GetString(delta, "content");
+                        if (string.IsNullOrEmpty(piece)) continue;
+                        _content.Append(piece);
+                        _onPartial?.Invoke(piece);
+                    }
+                    catch
+                    {
+                        // ignore bad chunk
+                    }
+                }
+
+                return true;
             }
         }
     }

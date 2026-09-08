@@ -26,6 +26,8 @@ namespace UnityAgent.Editor.LLM
         public List<LLMMessage> Messages = new List<LLMMessage>();
         public string SystemPrompt;
         public bool JsonMode;
+        /// <summary>Optional streaming callback for partial text chunks.</summary>
+        public Action<string> OnPartial;
     }
 
     public sealed class LLMResponse
@@ -35,6 +37,7 @@ namespace UnityAgent.Editor.LLM
         public string Error;
         public string Raw;
         public long DurationMs;
+        public bool WasStreamed;
     }
 
     public interface ILLMProvider

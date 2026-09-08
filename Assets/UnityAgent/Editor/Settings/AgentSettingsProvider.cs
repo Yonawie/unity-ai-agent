@@ -55,6 +55,7 @@ namespace UnityAgent.Editor.Settings
             s.AllowPlayMode = EditorGUILayout.Toggle("Allow Play Mode", s.AllowPlayMode);
             s.AutoApproveMediumRisk = EditorGUILayout.Toggle("Auto-approve Medium Risk", s.AutoApproveMediumRisk);
             s.RequireScriptDiffApproval = EditorGUILayout.Toggle("Require Script Diff Approval", s.RequireScriptDiffApproval);
+            s.EnableStreaming = EditorGUILayout.Toggle("Enable LLM Streaming", s.EnableStreaming);
 
             if (EditorGUI.EndChangeCheck())
                 AgentSettings.Save();
