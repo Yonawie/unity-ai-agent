@@ -153,8 +153,9 @@ public class SimpleCameraFollow : MonoBehaviour
         {
             var name = ToolArgs.Str(arguments, "name", "Directional Light");
             var typeName = ToolArgs.Str(arguments, "type", "Directional");
-            if (!Enum.TryParse(typeName, true, out LightType lightType))
-                return ToolResult.Fail("type must be Directional, Point, Spot, or Rectangle.");
+            if (!Enum.TryParse(typeName, true, out LightType lightType) ||
+                (lightType != LightType.Directional && lightType != LightType.Point && lightType != LightType.Spot))
+                return ToolResult.Fail("type must be Directional, Point, or Spot.");
 
             var go = new GameObject(name);
             Undo.RegisterCreatedObjectUndo(go, "UnityAgent Create Light");
