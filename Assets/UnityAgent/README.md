@@ -107,6 +107,17 @@ ollama pull qwen2.5-coder:7b
 - Script review: `preview_script_patch` + optional **Require Script Diff Approval** in Project Settings
 - Plan step status updates in the UI
 - Changes panel (Created / Modified / Deleted)
+### Providers
+
+| Provider value | Notes |
+|----------------|-------|
+| `Ollama` | Default. Base URL `http://localhost:11434` |
+| `OpenAICompatible` / `OpenAI` / `LMStudio` | Chat Completions API. Key: `UNITY_AGENT_API_KEY` |
+| `Claude` / `Anthropic` | Key: `ANTHROPIC_API_KEY` |
+| `Gemini` / `Google` | Key: `GEMINI_API_KEY` or `GOOGLE_API_KEY` |
+
+Vision works when **Enable Vision** is on and the selected model supports images (e.g. `llava`, `gpt-4o`, Claude/Gemini multimodal).
+
 ## Architecture
 
 ```text
