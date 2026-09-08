@@ -102,7 +102,16 @@ namespace UnityAgent.Editor.Agent
                 var parsed = ToolCallParser.Parse(response.Content);
                 ApplyPlan(session, parsed, onChanged);
 
-                if (session.Mode == AgentMode.Ask)
+                if (parsed.HasToolCall && session.Mode != AgentMode.Agent && IsMutatingTool(parsed.ToolCall.Tool))
+                {
+                    session.Messages.Add(AgentMessage.Assistant(
+                        $"Blocked mutating tool '{parsed.ToolCall.Tool}' in {session.Mode} mode. Switch to AGENT to execute changes."));
+                    SetStatus(session, AgentStatus.Completed, "Blocked in non-agent mode", onChanged);
+                    SessionPersistence.Save(session);
+                    return;
+                }
+
+                if (session.Mode == AgentMode.Ask && !parsed.HasToolCall)
                 {
                     var askText = parsed.FinalMessage ?? parsed.AssistantText ?? response.Content;
                     session.Messages.Add(AgentMessage.Assistant(askText));
@@ -122,15 +131,6 @@ namespace UnityAgent.Editor.Agent
 
                 if (parsed.HasToolCall)
                 {
-                    if (session.Mode != AgentMode.Agent && IsMutatingTool(parsed.ToolCall.Tool))
-                    {
-                        session.Messages.Add(AgentMessage.Assistant(
-                            $"Blocked mutating tool '{parsed.ToolCall.Tool}' in {session.Mode} mode.\n" +
-                            (parsed.FinalMessage ?? "Switch to AGENT mode to execute.")));
-                        SetStatus(session, AgentStatus.Completed, "Blocked in non-agent mode", onChanged);
-                        SessionPersistence.Save(session);
-                        return;
-                    }
 
                     SetStatus(session, AgentStatus.Executing, parsed.ToolCall.Tool, onChanged);
                     session.ActionLog.Add($"→ {parsed.ToolCall.Tool} {AgentJson.Serialize(parsed.ToolCall.Arguments)}");
