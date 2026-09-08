@@ -29,6 +29,7 @@ namespace UnityAgent.Editor.Settings
         public bool AutoApproveMediumRisk = true;
         public bool RequireScriptDiffApproval = false;
         public bool EnableStreaming = true;
+        public bool EnableVision = true;
     }
 
     public static class AgentSettings
@@ -124,7 +125,8 @@ namespace UnityAgent.Editor.Settings
             ["AllowPlayMode"] = d.AllowPlayMode,
             ["AutoApproveMediumRisk"] = d.AutoApproveMediumRisk,
             ["RequireScriptDiffApproval"] = d.RequireScriptDiffApproval,
-            ["EnableStreaming"] = d.EnableStreaming
+            ["EnableStreaming"] = d.EnableStreaming,
+            ["EnableVision"] = d.EnableVision
         };
 
         static AgentSettingsData FromDict(System.Collections.Generic.Dictionary<string, object> o) => new AgentSettingsData
@@ -146,7 +148,8 @@ namespace UnityAgent.Editor.Settings
             AllowPlayMode = AgentJson.GetBool(o, "AllowPlayMode", true),
             AutoApproveMediumRisk = AgentJson.GetBool(o, "AutoApproveMediumRisk", true),
             RequireScriptDiffApproval = AgentJson.GetBool(o, "RequireScriptDiffApproval", false),
-            EnableStreaming = AgentJson.GetBool(o, "EnableStreaming", true)
+            EnableStreaming = AgentJson.GetBool(o, "EnableStreaming", true),
+            EnableVision = AgentJson.GetBool(o, "EnableVision", true)
         };
     }
 }

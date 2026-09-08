@@ -24,6 +24,7 @@ namespace UnityAgent.Editor.Tools.Scripts
                 return ToolResult.Fail(error);
 
             var diff = TextDiff.Unified(current, next, path);
+            DiffReview.Set(path, TextDiff.Brief(current, next), diff);
             return ToolResult.Ok("Patch preview ready.", new Dictionary<string, object>
             {
                 ["path"] = path,
@@ -111,14 +112,19 @@ namespace UnityAgent.Editor.Tools.Scripts
             {
                 var brief = TextDiff.Brief(current, next);
                 var diff = TextDiff.Unified(current, next, path, maxLines: 120);
+                DiffReview.Set(path, brief, diff);
                 var approved = EditorUtility.DisplayDialog(
                     "AI Agent — Approve Script Patch",
-                    $"{path}\n{brief}\n\nApply this patch?\n\n(See Console for full diff preview)",
+                    $"{path}\n{brief}\n\nApply this patch?\n\n(Full diff is shown in the AI Agent Diff panel / Console)",
                     "Apply",
                     "Deny");
                 Debug.Log($"[UnityAgent] Script diff preview for {path}:\n{diff}");
                 if (!approved)
                     return ToolResult.Fail("User denied script patch.");
+            }
+            else
+            {
+                DiffReview.Set(path, TextDiff.Brief(current, next), TextDiff.Unified(current, next, path, maxLines: 120));
             }
 
             var backup = ChangeTracker.BackupFile(path);

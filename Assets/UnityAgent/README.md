@@ -78,6 +78,19 @@ ollama pull qwen2.5-coder:7b
 Поставь third-person камеру на Player и добавь Directional Light. Потом сделай скрин Scene view.
 ```
 
+## New capabilities (v0.4)
+
+- Vision: `analyze_capture` queues screenshots for multimodal LLM (Ollama/OpenAI/Claude/Gemini). Toggle **Enable Vision**.
+- Animation: `create_animator_controller`, `add_animator`, `list_animation_clips`
+- Audio: `add_audio_source`, `assign_audio_clip`, `list_audio_clips`
+- Project index: `build_project_index`, `get_project_index`
+- Play Mode smoke: `run_play_mode_smoke` → `get_play_mode_smoke_result`
+- Diff panel in the Agent window for script patches
+- Task queue: send while busy → requests wait and run next
+- Stronger Domain Reload resume (wait compile + console inject)
+- Tool auto-discovery via `[AgentTool]` / `UnityAgent.*` namespaces
+- Providers: `Claude`, `Gemini` (API keys via env: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` / `UNITY_AGENT_API_KEY`)
+
 ## New capabilities (v0.3)
 
 - UI: `create_canvas`, `create_ui_text`, `create_ui_button`, `create_ui_panel`, `set_rect_transform`

@@ -87,7 +87,41 @@ namespace UnityAgent.Editor.LLM
                     messages.Add(new Dictionary<string, object> { ["role"] = "system", ["content"] = request.SystemPrompt });
 
                 foreach (var msg in request.Messages)
-                    messages.Add(new Dictionary<string, object> { ["role"] = msg.Role, ["content"] = msg.Content ?? "" });
+                {
+                    object content;
+                    var imgs = new List<string>();
+                    if (msg.ImagePaths != null) imgs.AddRange(msg.ImagePaths);
+                    if (msg.Role == "user" && request.ImagePaths != null && AgentSettings.Current.EnableVision)
+                        imgs.AddRange(request.ImagePaths);
+
+                    if (imgs.Count > 0 && AgentSettings.Current.EnableVision && msg.Role == "user")
+                    {
+                        var parts = new List<object>
+                        {
+                            new Dictionary<string, object> { ["type"] = "text", ["text"] = msg.Content ?? "" }
+                        };
+                        foreach (var p in imgs)
+                        {
+                            var b64 = VisionImageUtil.ToBase64(p);
+                            if (b64 == null) continue;
+                            parts.Add(new Dictionary<string, object>
+                            {
+                                ["type"] = "image_url",
+                                ["image_url"] = new Dictionary<string, object>
+                                {
+                                    ["url"] = $"data:{VisionImageUtil.Mime(p)};base64,{b64}"
+                                }
+                            });
+                        }
+                        content = parts;
+                    }
+                    else
+                    {
+                        content = msg.Content ?? "";
+                    }
+
+                    messages.Add(new Dictionary<string, object> { ["role"] = msg.Role, ["content"] = content });
+                }
 
                 var useStream = request.OnPartial != null && AgentSettings.Current.EnableStreaming;
 
@@ -256,6 +290,22 @@ namespace UnityAgent.Editor.LLM
         {
             var s = AgentSettings.Current;
             var provider = (s.Provider ?? "Ollama").Trim();
+            if (provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) ||
+                provider.Equals("Anthropic", StringComparison.OrdinalIgnoreCase))
+            {
+                return new ClaudeProvider(string.IsNullOrWhiteSpace(s.BaseUrl) || s.BaseUrl.Contains("11434")
+                    ? "https://api.anthropic.com"
+                    : s.BaseUrl, s.Model);
+            }
+
+            if (provider.Equals("Gemini", StringComparison.OrdinalIgnoreCase) ||
+                provider.Equals("Google", StringComparison.OrdinalIgnoreCase))
+            {
+                return new GeminiProvider(string.IsNullOrWhiteSpace(s.BaseUrl) || s.BaseUrl.Contains("11434")
+                    ? "https://generativelanguage.googleapis.com"
+                    : s.BaseUrl, s.Model);
+            }
+
             if (provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ||
                 provider.Equals("OpenAICompatible", StringComparison.OrdinalIgnoreCase) ||
                 provider.Equals("LMStudio", StringComparison.OrdinalIgnoreCase))

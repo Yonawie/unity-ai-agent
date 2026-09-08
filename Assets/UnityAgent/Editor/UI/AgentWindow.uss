@@ -163,8 +163,9 @@
     color: #d1d5db;
 }
 
-.error-label {
+.diff-label {
     white-space: normal;
-    color: #fca5a5;
-    min-height: 40px;
+    color: #cbd5e1;
+    -unity-font-style: normal;
+    font-size: 11px;
 }

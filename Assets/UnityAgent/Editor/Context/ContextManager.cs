@@ -154,6 +154,10 @@ namespace UnityAgent.Editor.Context
             sb.AppendLine("For HUD/menus use create_canvas / create_ui_button / create_ui_text / create_ui_panel.");
             sb.AppendLine("For third-person view use create_third_person_camera; for lighting use create_light.");
             sb.AppendLine("After major scene changes, optionally capture_scene_view or capture_game_view to verify.");
+            sb.AppendLine("For visual understanding, call analyze_capture (queues image for the next reasoning step; requires vision model).");
+            sb.AppendLine("Use build_project_index / get_project_index to discover project assets quickly.");
+            sb.AppendLine("For animation: create_animator_controller + add_animator. For sound: add_audio_source + assign_audio_clip.");
+            sb.AppendLine("Optional validation: run_play_mode_smoke then get_play_mode_smoke_result.");
             sb.AppendLine("Use preview_script_patch before risky edits when helpful.");
             sb.AppendLine();
             sb.AppendLine("Available tools:");

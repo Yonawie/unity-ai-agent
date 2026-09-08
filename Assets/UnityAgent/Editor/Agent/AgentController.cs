@@ -1,14 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityAgent.Editor.Context;
+using UnityAgent.Editor.Diff;
 using UnityAgent.Editor.LLM;
 using UnityAgent.Editor.Logging;
 using UnityAgent.Editor.Persistence;
 using UnityAgent.Editor.Safety;
 using UnityAgent.Editor.Settings;
 using UnityAgent.Editor.Tools;
+using UnityAgent.Editor.Util;
 
 namespace UnityAgent.Editor.Agent
 {
@@ -31,10 +34,12 @@ namespace UnityAgent.Editor.Agent
         public AgentSession Session { get; private set; }
         public AgentLoop Loop { get; }
 
+        readonly Queue<string> _requestQueue = new Queue<string>();
         CancellationTokenSource _cts;
         bool _runGate;
 
         public bool IsRunning => _runGate;
+        public int QueuedCount => _requestQueue.Count;
 
         public event Action SessionChanged;
 
@@ -49,10 +54,6 @@ namespace UnityAgent.Editor.Agent
             Dispatcher = new ToolDispatcher(Registry, validator, permissions, Changes);
             Loop = new AgentLoop(Registry, Dispatcher, Context, Changes);
             Session = SessionPersistence.Load() ?? new AgentSession { Mode = AgentSettings.DefaultMode };
-            AssemblyReloadEvents.afterAssemblyReload += () =>
-            {
-                // Static instance may be new after reload; UI binds to Instance.
-            };
         }
 
         void TryResumeAfterReload()
@@ -72,21 +73,63 @@ namespace UnityAgent.Editor.Agent
                 return;
             }
 
-            EditorApplication.delayCall += () =>
+            EditorApplication.delayCall += async () =>
             {
                 if (_runGate) return;
                 AgentLogger.Info("Resuming agent after Domain Reload");
-                Session.StatusDetail = "Resumed after Domain Reload";
-                Session.ResumeAfterReload = false;
+                Session.Status = AgentStatus.WaitingForUnity;
+                Session.StatusDetail = "Waiting for compilation settle after Domain Reload";
                 SessionPersistence.Save(Session);
                 SessionChanged?.Invoke();
-                ContinueRun();
+
+                try
+                {
+                    // Wait until Unity is fully done compiling.
+                    var token = CancellationToken.None;
+                    var started = DateTime.UtcNow;
+                    while (EditorApplication.isCompiling && (DateTime.UtcNow - started).TotalSeconds < 180)
+                        await Task.Delay(100);
+
+                    await Task.Delay(300);
+                    var console = Dispatcher.Dispatch(new ToolCall
+                    {
+                        Tool = "read_console",
+                        Arguments = new Dictionary<string, object>
+                        {
+                            ["includeWarnings"] = true,
+                            ["includeLogs"] = false,
+                            ["maxEntries"] = 40
+                        }
+                    });
+                    var consoleJson = AgentJson.Serialize(console.ToDictionary());
+                    Session.Messages.Add(AgentMessage.Tool("read_console", Guid.NewGuid().ToString("N"), consoleJson));
+                    Session.Messages.Add(AgentMessage.User(
+                        "Domain Reload finished. Fresh console JSON:\n" + consoleJson +
+                        "\nContinue the previous task. If hasErrors=true, fix scripts first."));
+                    Session.PendingAction = "post_reload_continue";
+                    Session.ResumeAfterReload = false;
+                    Session.StatusDetail = "Resumed after Domain Reload";
+                    SessionPersistence.Save(Session);
+                    SessionChanged?.Invoke();
+                    ContinueRun();
+                }
+                catch (Exception ex)
+                {
+                    AgentLogger.Error("Resume after reload failed: " + ex);
+                    Session.Status = AgentStatus.Failed;
+                    Session.LastError = ex.Message;
+                    Session.ResumeAfterReload = false;
+                    SessionPersistence.Save(Session);
+                    SessionChanged?.Invoke();
+                }
             };
         }
 
         public void ClearConversation()
         {
             Stop();
+            _requestQueue.Clear();
+            DiffReview.Clear();
             Session = new AgentSession { Mode = Session?.Mode ?? AgentSettings.DefaultMode };
             SessionPersistence.Clear();
             SessionPersistence.Save(Session);
@@ -111,14 +154,25 @@ namespace UnityAgent.Editor.Agent
         public void Send(string userText)
         {
             if (string.IsNullOrWhiteSpace(userText)) return;
+            userText = userText.Trim();
+
             if (_runGate)
             {
-                Session.LastError = "Agent is already running. Press Stop first.";
+                _requestQueue.Enqueue(userText);
+                Session.Messages.Add(AgentMessage.User($"[queued] {userText}"));
+                Session.StatusDetail = $"Queued ({_requestQueue.Count} waiting)";
+                SessionPersistence.Save(Session);
                 SessionChanged?.Invoke();
+                AgentLogger.Info("Queued request: " + userText);
                 return;
             }
 
-            Session.UserRequest = userText.Trim();
+            StartRequest(userText);
+        }
+
+        void StartRequest(string userText)
+        {
+            Session.UserRequest = userText;
             Session.Messages.Add(AgentMessage.User(Session.UserRequest));
             Session.Status = AgentStatus.Thinking;
             Session.StatusDetail = "Starting";
@@ -127,7 +181,10 @@ namespace UnityAgent.Editor.Agent
             Session.CurrentStep = 0;
             Session.PendingAction = null;
             Session.ResumeAfterReload = false;
+            Session.StreamingText = null;
             if (Session.Plan == null) Session.Plan = new AgentPlan();
+            else if (Session.Status == AgentStatus.Idle || Session.Status == AgentStatus.Completed)
+                Session.Plan = new AgentPlan();
             SessionPersistence.Save(Session);
             SessionChanged?.Invoke();
             AgentLogger.Info("User request: " + Session.UserRequest);
@@ -154,7 +211,6 @@ namespace UnityAgent.Editor.Agent
             }
             catch (Exception ex)
             {
-                // Domain reload aborts tasks; persist resume flag if we were compiling.
                 if (Session != null && Session.ResumeAfterReload)
                 {
                     AgentLogger.Warn("Agent loop interrupted (likely Domain Reload). Will resume.");
@@ -176,11 +232,22 @@ namespace UnityAgent.Editor.Agent
                 _runGate = false;
                 _cts?.Dispose();
                 _cts = null;
+
+                // Drain queue
+                if (_requestQueue.Count > 0 &&
+                    Session != null &&
+                    Session.Status != AgentStatus.Cancelled &&
+                    !Session.ResumeAfterReload)
+                {
+                    var next = _requestQueue.Dequeue();
+                    EditorApplication.delayCall += () => StartRequest(next);
+                }
             }
         }
 
         public void Stop()
         {
+            _requestQueue.Clear();
             try { _cts?.Cancel(); } catch { /* ignore */ }
 
             if (Session != null &&

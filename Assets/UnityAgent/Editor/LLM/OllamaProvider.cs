@@ -96,11 +96,28 @@ namespace UnityAgent.Editor.LLM
 
                 foreach (var msg in request.Messages)
                 {
-                    messages.Add(new Dictionary<string, object>
+                    var dict = new Dictionary<string, object>
                     {
                         ["role"] = msg.Role,
                         ["content"] = msg.Content ?? string.Empty
-                    });
+                    };
+
+                    // Ollama vision: images[] base64 on the message
+                    var imgs = new List<string>();
+                    if (msg.ImagePaths != null) imgs.AddRange(msg.ImagePaths);
+                    if (msg.Role == "user" && request.ImagePaths != null) imgs.AddRange(request.ImagePaths);
+                    if (imgs.Count > 0 && AgentSettings.Current.EnableVision)
+                    {
+                        var b64s = new List<object>();
+                        foreach (var p in imgs)
+                        {
+                            var b64 = VisionImageUtil.ToBase64(p);
+                            if (b64 != null) b64s.Add(b64);
+                        }
+                        if (b64s.Count > 0) dict["images"] = b64s;
+                    }
+
+                    messages.Add(dict);
                 }
 
                 var body = new Dictionary<string, object>

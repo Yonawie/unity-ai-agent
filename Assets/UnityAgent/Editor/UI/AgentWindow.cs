@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityAgent.Editor.Agent;
+using UnityAgent.Editor.Diff;
 using UnityAgent.Editor.Settings;
 
 namespace UnityAgent.Editor.UI
@@ -16,6 +17,7 @@ namespace UnityAgent.Editor.UI
         VisualElement _planContainer;
         VisualElement _actionsContainer;
         VisualElement _changesContainer;
+        Label _diffLabel;
         Label _statusLabel;
         Label _errorLabel;
         TextField _inputField;
@@ -108,6 +110,7 @@ namespace UnityAgent.Editor.UI
             var changes = new ScrollView { name = "changes-scroll" };
             changes.Add(new VisualElement { name = "changes-container" });
             root.Add(changes);
+            root.Add(new Label("No diff yet.") { name = "diff-label" });
             root.Add(new Label { name = "error-label" });
         }
 
@@ -118,6 +121,7 @@ namespace UnityAgent.Editor.UI
             _planContainer = root.Q<VisualElement>("plan-container");
             _actionsContainer = root.Q<VisualElement>("actions-container");
             _changesContainer = root.Q<VisualElement>("changes-container");
+            _diffLabel = root.Q<Label>("diff-label");
             _statusLabel = root.Q<Label>("status-label");
             _errorLabel = root.Q<Label>("error-label");
             _inputField = root.Q<TextField>("input-field");
@@ -217,9 +221,12 @@ namespace UnityAgent.Editor.UI
             if (session == null) return;
 
             if (_statusLabel != null)
+            {
+                var queue = _controller.QueuedCount > 0 ? $" | queue:{_controller.QueuedCount}" : "";
                 _statusLabel.text = string.IsNullOrEmpty(session.StatusDetail)
-                    ? session.Status.ToString()
-                    : $"{session.Status}: {session.StatusDetail}";
+                    ? session.Status + queue
+                    : $"{session.Status}: {session.StatusDetail}{queue}";
+            }
 
             if (_modeField != null && !Equals(_modeField.value, session.Mode))
                 _modeField.SetValueWithoutNotify(session.Mode);
@@ -231,6 +238,7 @@ namespace UnityAgent.Editor.UI
             RefreshPlan(session);
             RefreshActions(session);
             RefreshChanges();
+            RefreshDiff();
         }
 
         void RefreshChat(AgentSession session)
@@ -313,6 +321,19 @@ namespace UnityAgent.Editor.UI
                 label.AddToClassList("action-item");
                 _changesContainer.Add(label);
             }
+        }
+
+        void RefreshDiff()
+        {
+            if (_diffLabel == null) return;
+            if (string.IsNullOrEmpty(DiffReview.UnifiedDiff))
+            {
+                _diffLabel.text = "No diff yet.";
+                return;
+            }
+
+            var header = string.IsNullOrEmpty(DiffReview.Path) ? "" : DiffReview.Path + "\n" + DiffReview.Brief + "\n\n";
+            _diffLabel.text = TrimForUi(header + DiffReview.UnifiedDiff);
         }
 
         static string TrimForUi(string content)

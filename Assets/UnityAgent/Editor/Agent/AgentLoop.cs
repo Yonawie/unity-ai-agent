@@ -11,6 +11,7 @@ using UnityAgent.Editor.Persistence;
 using UnityAgent.Editor.Safety;
 using UnityAgent.Editor.Settings;
 using UnityAgent.Editor.Tools;
+using UnityAgent.Editor.Tools.Vision;
 using UnityAgent.Editor.Util;
 
 namespace UnityAgent.Editor.Agent
@@ -85,6 +86,20 @@ namespace UnityAgent.Editor.Agent
                         onChanged?.Invoke();
                     }
                 };
+
+                // Attach queued vision captures for multimodal models.
+                if (settings.EnableVision)
+                {
+                    var images = VisionQueue.Drain();
+                    if (images.Count > 0)
+                    {
+                        request.ImagePaths.AddRange(images);
+                        request.Messages.Add(new LLMMessage("user",
+                            "Vision captures attached (" + images.Count +
+                            "). Describe what you see and continue the task using tools if needed.\nPaths:\n- " +
+                            string.Join("\n- ", images)));
+                    }
+                }
 
                 session.StreamingText = string.Empty;
 

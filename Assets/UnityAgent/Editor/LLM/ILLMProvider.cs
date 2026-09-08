@@ -9,6 +9,7 @@ namespace UnityAgent.Editor.LLM
     {
         public string Role;
         public string Content;
+        public List<string> ImagePaths;
 
         public LLMMessage() { }
         public LLMMessage(string role, string content)
@@ -26,8 +27,9 @@ namespace UnityAgent.Editor.LLM
         public List<LLMMessage> Messages = new List<LLMMessage>();
         public string SystemPrompt;
         public bool JsonMode;
-        /// <summary>Optional streaming callback for partial text chunks.</summary>
         public Action<string> OnPartial;
+        /// <summary>Image file paths to attach for multimodal models.</summary>
+        public List<string> ImagePaths = new List<string>();
     }
 
     public sealed class LLMResponse

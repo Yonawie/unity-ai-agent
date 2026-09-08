@@ -43,6 +43,10 @@
                 <ui:ScrollView name="changes-scroll" class="side-scroll">
                     <ui:VisualElement name="changes-container" />
                 </ui:ScrollView>
+                <ui:Label text="Script Diff" class="section-title" />
+                <ui:ScrollView name="diff-scroll" class="side-scroll">
+                    <ui:Label name="diff-label" text="No diff yet." class="diff-label" />
+                </ui:ScrollView>
                 <ui:Label text="Errors / Connection" class="section-title" />
                 <ui:Label name="error-label" text="" class="error-label" />
             </ui:VisualElement>

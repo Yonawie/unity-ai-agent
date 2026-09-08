@@ -56,6 +56,7 @@ namespace UnityAgent.Editor.Settings
             s.AutoApproveMediumRisk = EditorGUILayout.Toggle("Auto-approve Medium Risk", s.AutoApproveMediumRisk);
             s.RequireScriptDiffApproval = EditorGUILayout.Toggle("Require Script Diff Approval", s.RequireScriptDiffApproval);
             s.EnableStreaming = EditorGUILayout.Toggle("Enable LLM Streaming", s.EnableStreaming);
+            s.EnableVision = EditorGUILayout.Toggle("Enable Vision (image captures)", s.EnableVision);
 
             if (EditorGUI.EndChangeCheck())
                 AgentSettings.Save();
