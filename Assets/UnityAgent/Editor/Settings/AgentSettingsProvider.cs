@@ -54,6 +54,7 @@ namespace UnityAgent.Editor.Settings
             s.AllowProjectSettingsModification = EditorGUILayout.Toggle("Allow Project Settings Modification", s.AllowProjectSettingsModification);
             s.AllowPlayMode = EditorGUILayout.Toggle("Allow Play Mode", s.AllowPlayMode);
             s.AutoApproveMediumRisk = EditorGUILayout.Toggle("Auto-approve Medium Risk", s.AutoApproveMediumRisk);
+            s.RequireScriptDiffApproval = EditorGUILayout.Toggle("Require Script Diff Approval", s.RequireScriptDiffApproval);
 
             if (EditorGUI.EndChangeCheck())
                 AgentSettings.Save();

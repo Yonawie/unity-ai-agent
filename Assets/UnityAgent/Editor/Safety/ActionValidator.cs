@@ -88,6 +88,7 @@ namespace UnityAgent.Editor.Safety
                     break;
                 case "create_script":
                 case "patch_script":
+                case "create_wasd_controller_script":
                     if (!s.AllowScriptModification)
                     {
                         error = "Script modification is disabled in AI Agent settings.";
@@ -95,10 +96,29 @@ namespace UnityAgent.Editor.Safety
                     }
                     break;
                 case "create_folder":
+                case "create_prefab":
+                case "create_material":
                 case "find_assets":
-                    if (tool.Name == "create_folder" && !s.AllowAssetCreation)
+                    if ((tool.Name == "create_folder" || tool.Name == "create_prefab" || tool.Name == "create_material") &&
+                        !s.AllowAssetCreation)
                     {
                         error = "Asset creation is disabled in AI Agent settings.";
+                        return false;
+                    }
+                    break;
+                case "instantiate_prefab":
+                case "unpack_prefab":
+                case "assign_material":
+                case "set_material_color":
+                case "set_tag":
+                case "set_layer":
+                case "set_selection":
+                case "focus_object":
+                    if (!s.AllowSceneModification &&
+                        (tool.Name == "instantiate_prefab" || tool.Name == "unpack_prefab" ||
+                         tool.Name == "assign_material" || tool.Name == "set_tag" || tool.Name == "set_layer"))
+                    {
+                        error = "Scene modification is disabled in AI Agent settings.";
                         return false;
                     }
                     break;

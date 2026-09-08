@@ -55,6 +55,14 @@ ollama pull qwen2.5-coder:7b
 ```
 
 ```text
+Создай красный материал, назначь его TestCube и сохрани TestCube как Prefab.
+```
+
+```text
+Определи Input System и создай WASD-контроллер, затем повесь его на Player.
+```
+
+```text
 Создай скрипт RotateObject.cs, который вращает объект, добавь его к TestCube и проверь Console.
 ```
 
@@ -62,6 +70,15 @@ ollama pull qwen2.5-coder:7b
 Создай Cube, назови его PlayerCube, добавь Rigidbody и создай скрипт, который позволяет двигать его клавишами WASD.
 ```
 
+## New capabilities (v0.2)
+
+- Prefabs: `create_prefab`, `instantiate_prefab`, `unpack_prefab`, `get_prefab_info`
+- Materials: `create_material`, `assign_material`, `set_material_color`
+- Selection: `get_selection`, `set_selection`, `focus_object`, `set_tag`, `set_layer`
+- Input helpers: `detect_input_setup`, `create_wasd_controller_script`
+- Script review: `preview_script_patch` + optional **Require Script Diff Approval** in Project Settings
+- Plan step status updates in the UI
+- Changes panel (Created / Modified / Deleted)
 ## Architecture
 
 ```text

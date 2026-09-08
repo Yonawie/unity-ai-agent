@@ -149,6 +149,9 @@ namespace UnityAgent.Editor.Context
             sb.AppendLine("After create_script or patch_script, wait for compilation feedback from the system, then use read_console.");
             sb.AppendLine("If compilation errors appear, read_script then patch_script, then re-check console.");
             sb.AppendLine("When adding a newly created script component, use the class name as componentType after successful compile.");
+            sb.AppendLine("For movement controllers, prefer detect_input_setup then create_wasd_controller_script.");
+            sb.AppendLine("For visual setup, prefer create_material + assign_material. For reusable objects, create_prefab / instantiate_prefab.");
+            sb.AppendLine("Use preview_script_patch before risky edits when helpful.");
             sb.AppendLine();
             sb.AppendLine("Available tools:");
             foreach (var tool in registry.All)

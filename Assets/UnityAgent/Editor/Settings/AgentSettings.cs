@@ -27,6 +27,7 @@ namespace UnityAgent.Editor.Settings
         public bool AllowProjectSettingsModification = false;
         public bool AllowPlayMode = true;
         public bool AutoApproveMediumRisk = true;
+        public bool RequireScriptDiffApproval = false;
     }
 
     public static class AgentSettings
@@ -120,7 +121,8 @@ namespace UnityAgent.Editor.Settings
             ["AllowAssetDeletion"] = d.AllowAssetDeletion,
             ["AllowProjectSettingsModification"] = d.AllowProjectSettingsModification,
             ["AllowPlayMode"] = d.AllowPlayMode,
-            ["AutoApproveMediumRisk"] = d.AutoApproveMediumRisk
+            ["AutoApproveMediumRisk"] = d.AutoApproveMediumRisk,
+            ["RequireScriptDiffApproval"] = d.RequireScriptDiffApproval
         };
 
         static AgentSettingsData FromDict(System.Collections.Generic.Dictionary<string, object> o) => new AgentSettingsData
@@ -140,7 +142,8 @@ namespace UnityAgent.Editor.Settings
             AllowAssetDeletion = AgentJson.GetBool(o, "AllowAssetDeletion", false),
             AllowProjectSettingsModification = AgentJson.GetBool(o, "AllowProjectSettingsModification", false),
             AllowPlayMode = AgentJson.GetBool(o, "AllowPlayMode", true),
-            AutoApproveMediumRisk = AgentJson.GetBool(o, "AutoApproveMediumRisk", true)
+            AutoApproveMediumRisk = AgentJson.GetBool(o, "AutoApproveMediumRisk", true),
+            RequireScriptDiffApproval = AgentJson.GetBool(o, "RequireScriptDiffApproval", false)
         };
     }
 }

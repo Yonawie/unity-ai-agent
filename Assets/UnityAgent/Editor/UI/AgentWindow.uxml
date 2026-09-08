@@ -39,6 +39,10 @@
                 <ui:ScrollView name="actions-scroll" class="side-scroll">
                     <ui:VisualElement name="actions-container" />
                 </ui:ScrollView>
+                <ui:Label text="Changes" class="section-title" />
+                <ui:ScrollView name="changes-scroll" class="side-scroll">
+                    <ui:VisualElement name="changes-container" />
+                </ui:ScrollView>
                 <ui:Label text="Errors / Connection" class="section-title" />
                 <ui:Label name="error-label" text="" class="error-label" />
             </ui:VisualElement>

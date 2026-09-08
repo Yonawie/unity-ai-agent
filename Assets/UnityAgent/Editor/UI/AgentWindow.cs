@@ -15,6 +15,7 @@ namespace UnityAgent.Editor.UI
         VisualElement _chatContainer;
         VisualElement _planContainer;
         VisualElement _actionsContainer;
+        VisualElement _changesContainer;
         Label _statusLabel;
         Label _errorLabel;
         TextField _inputField;
@@ -104,6 +105,9 @@ namespace UnityAgent.Editor.UI
             var actions = new ScrollView { name = "actions-scroll" };
             actions.Add(new VisualElement { name = "actions-container" });
             root.Add(actions);
+            var changes = new ScrollView { name = "changes-scroll" };
+            changes.Add(new VisualElement { name = "changes-container" });
+            root.Add(changes);
             root.Add(new Label { name = "error-label" });
         }
 
@@ -113,6 +117,7 @@ namespace UnityAgent.Editor.UI
             _chatContainer = root.Q<VisualElement>("chat-container") ?? _chatScroll?.contentContainer;
             _planContainer = root.Q<VisualElement>("plan-container");
             _actionsContainer = root.Q<VisualElement>("actions-container");
+            _changesContainer = root.Q<VisualElement>("changes-container");
             _statusLabel = root.Q<Label>("status-label");
             _errorLabel = root.Q<Label>("error-label");
             _inputField = root.Q<TextField>("input-field");
@@ -225,6 +230,7 @@ namespace UnityAgent.Editor.UI
             RefreshChat(session);
             RefreshPlan(session);
             RefreshActions(session);
+            RefreshChanges();
         }
 
         void RefreshChat(AgentSession session)
@@ -280,6 +286,20 @@ namespace UnityAgent.Editor.UI
                 var label = new Label(action);
                 label.AddToClassList("action-item");
                 _actionsContainer.Add(label);
+            }
+        }
+
+        void RefreshChanges()
+        {
+            if (_changesContainer == null || _controller == null) return;
+            _changesContainer.Clear();
+            var summary = _controller.Changes?.Summarize() ?? "No tracked changes.";
+            foreach (var line in summary.Split('\n'))
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                var label = new Label(line.TrimEnd());
+                label.AddToClassList("action-item");
+                _changesContainer.Add(label);
             }
         }
 

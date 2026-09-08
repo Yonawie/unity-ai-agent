@@ -131,7 +131,7 @@ namespace UnityAgent.Editor.Agent
 
                 if (parsed.HasToolCall)
                 {
-
+                    MarkPlanRunning(session, parsed.ToolCall.Tool, onChanged);
                     SetStatus(session, AgentStatus.Executing, parsed.ToolCall.Tool, onChanged);
                     session.ActionLog.Add($"→ {parsed.ToolCall.Tool} {AgentJson.Serialize(parsed.ToolCall.Arguments)}");
                     session.Messages.Add(AgentMessage.Assistant(parsed.AssistantText ?? $"Calling {parsed.ToolCall.Tool}"));
@@ -143,6 +143,7 @@ namespace UnityAgent.Editor.Agent
                     session.ActionLog.Add(result.Success
                         ? $"✓ {parsed.ToolCall.Tool}: {result.Message}"
                         : $"✗ {parsed.ToolCall.Tool}: {result.Error}");
+                    MarkPlanStepResult(session, parsed.ToolCall.Tool, result.Success, onChanged);
                     llmMessages.Add(new AgentMessage { Role = "assistant", Content = response.Content });
                     llmMessages.Add(AgentMessage.Tool(parsed.ToolCall.Tool, parsed.ToolCall.Id, resultJson, !result.Success));
                     onChanged?.Invoke();
@@ -205,6 +206,7 @@ namespace UnityAgent.Editor.Agent
                 }
 
                 session.Messages.Add(AgentMessage.Assistant(finalText));
+                CompleteRemainingPlanSteps(session);
                 SetStatus(session, AgentStatus.Completed, "Done", onChanged);
                 SessionPersistence.Save(session);
                 return;
@@ -249,6 +251,95 @@ namespace UnityAgent.Editor.Agent
                     session.Plan.AddStep(title, detail);
                 }
             }
+            else
+            {
+                // Allow plan extension when model adds more steps mid-run.
+                foreach (var step in parsed.PlanSteps)
+                {
+                    var title = AgentJson.GetString(step, "title") ?? AgentJson.GetString(step, "name");
+                    if (string.IsNullOrEmpty(title)) continue;
+                    if (session.Plan.Steps.Exists(s => string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                    session.Plan.AddStep(title, AgentJson.GetString(step, "detail"));
+                }
+            }
+        }
+
+        static void MarkPlanRunning(AgentSession session, string toolName, Action onChanged)
+        {
+            if (session.Plan?.Steps == null || session.Plan.Steps.Count == 0) return;
+            foreach (var step in session.Plan.Steps)
+            {
+                if (step.Status == PlanStepStatus.Running)
+                    step.Status = PlanStepStatus.Completed;
+            }
+
+            var match = FindBestPlanStep(session, toolName);
+            if (match != null && match.Status == PlanStepStatus.Pending)
+            {
+                match.Status = PlanStepStatus.Running;
+                match.Detail = toolName;
+            }
+            onChanged?.Invoke();
+        }
+
+        static void MarkPlanStepResult(AgentSession session, string toolName, bool success, Action onChanged)
+        {
+            var match = FindBestPlanStep(session, toolName);
+            if (match == null)
+            {
+                // Fall back to first running/pending step.
+                match = session.Plan.Steps.Find(s => s.Status == PlanStepStatus.Running)
+                        ?? session.Plan.Steps.Find(s => s.Status == PlanStepStatus.Pending);
+            }
+            if (match == null) return;
+            match.Status = success ? PlanStepStatus.Completed : PlanStepStatus.Failed;
+            match.Detail = toolName;
+            onChanged?.Invoke();
+        }
+
+        static AgentPlanStep FindBestPlanStep(AgentSession session, string toolName)
+        {
+            if (session.Plan?.Steps == null) return null;
+            var running = session.Plan.Steps.Find(s => s.Status == PlanStepStatus.Running);
+            if (running != null) return running;
+
+            foreach (var step in session.Plan.Steps)
+            {
+                if (step.Status != PlanStepStatus.Pending) continue;
+                if (string.IsNullOrEmpty(toolName)) return step;
+                if (!string.IsNullOrEmpty(step.Title) &&
+                    step.Title.IndexOf(toolName.Replace('_', ' '), StringComparison.OrdinalIgnoreCase) >= 0)
+                    return step;
+                if (!string.IsNullOrEmpty(step.Title) &&
+                    ToolImpliesStep(toolName, step.Title))
+                    return step;
+            }
+            return session.Plan.Steps.Find(s => s.Status == PlanStepStatus.Pending);
+        }
+
+        static bool ToolImpliesStep(string tool, string title)
+        {
+            tool = tool.ToLowerInvariant();
+            title = title.ToLowerInvariant();
+            if (tool.Contains("script") && title.Contains("script")) return true;
+            if (tool.Contains("prefab") && title.Contains("prefab")) return true;
+            if (tool.Contains("material") && title.Contains("material")) return true;
+            if (tool.Contains("game_object") && (title.Contains("create") || title.Contains("object") || title.Contains("player"))) return true;
+            if (tool.Contains("console") && (title.Contains("console") || title.Contains("compil") || title.Contains("error"))) return true;
+            if (tool.Contains("component") && title.Contains("component")) return true;
+            if (tool.Contains("save_scene") && title.Contains("save")) return true;
+            return false;
+        }
+
+        static void CompleteRemainingPlanSteps(AgentSession session)
+        {
+            if (session.Plan?.Steps == null) return;
+            foreach (var step in session.Plan.Steps)
+            {
+                if (step.Status == PlanStepStatus.Pending || step.Status == PlanStepStatus.Running)
+                    step.Status = PlanStepStatus.Completed;
+            }
         }
 
         static string BuildPlanText(AgentSession session, string message)
@@ -277,6 +368,9 @@ namespace UnityAgent.Editor.Agent
                    name.StartsWith("patch_") ||
                    name.StartsWith("rename_") ||
                    name.StartsWith("duplicate_") ||
+                   name.StartsWith("assign_") ||
+                   name.StartsWith("instantiate_") ||
+                   name.StartsWith("unpack_") ||
                    name == "save_scene" ||
                    name == "enter_play_mode" ||
                    name == "exit_play_mode" ||

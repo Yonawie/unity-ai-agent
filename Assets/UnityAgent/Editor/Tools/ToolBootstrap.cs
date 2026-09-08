@@ -2,8 +2,12 @@ using UnityAgent.Editor.Tools.Assets;
 using UnityAgent.Editor.Tools.Console;
 using UnityAgent.Editor.Tools.EditorTools;
 using UnityAgent.Editor.Tools.GameObjects;
+using UnityAgent.Editor.Tools.InputTools;
+using UnityAgent.Editor.Tools.Materials;
+using UnityAgent.Editor.Tools.Prefabs;
 using UnityAgent.Editor.Tools.Scene;
 using UnityAgent.Editor.Tools.Scripts;
+using UnityAgent.Editor.Tools.SelectionTools;
 
 namespace UnityAgent.Editor.Tools
 {
@@ -30,11 +34,34 @@ namespace UnityAgent.Editor.Tools
             registry.Register(new AddComponentTool());
             registry.Register(new RemoveComponentTool());
 
+            // Selection / tags / layers
+            registry.Register(new GetSelectionTool());
+            registry.Register(new SetSelectionTool());
+            registry.Register(new FocusObjectTool());
+            registry.Register(new SetTagTool());
+            registry.Register(new SetLayerTool());
+
+            // Prefabs
+            registry.Register(new CreatePrefabTool());
+            registry.Register(new InstantiatePrefabTool());
+            registry.Register(new UnpackPrefabTool());
+            registry.Register(new GetPrefabInfoTool());
+
+            // Materials
+            registry.Register(new CreateMaterialTool());
+            registry.Register(new AssignMaterialTool());
+            registry.Register(new SetMaterialColorTool());
+
             // Scripts
             registry.Register(new ListScriptsTool());
             registry.Register(new ReadScriptTool());
             registry.Register(new CreateScriptTool());
+            registry.Register(new PreviewScriptPatchTool());
             registry.Register(new PatchScriptTool());
+
+            // Input helpers
+            registry.Register(new DetectInputSetupTool());
+            registry.Register(new CreateWasdControllerScriptTool());
 
             // Console
             registry.Register(new ReadConsoleTool());

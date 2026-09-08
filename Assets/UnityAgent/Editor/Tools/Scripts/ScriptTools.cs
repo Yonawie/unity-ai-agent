@@ -5,7 +5,6 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityAgent.Editor.Agent;
-using UnityAgent.Editor.Safety;
 
 namespace UnityAgent.Editor.Tools.Scripts
 {
@@ -159,65 +158,10 @@ public class {className} : MonoBehaviour
     public sealed class PatchScriptTool : IAgentTool
     {
         public string Name => "patch_script";
-        public string Description => "Applies a targeted patch to a script. Provide expectedHash from read_script, and either full content replacement via 'content', or search/replace via oldString/newString.";
+        public string Description => "Applies a targeted patch to a script. Provide expectedHash from read_script, and either full content replacement via 'content', or search/replace via oldString/newString. May show a diff approval dialog when enabled in settings.";
         public string ParameterSchema => "{\"path\":string,\"expectedHash\":string,\"content\":string,\"oldString\":string,\"newString\":string,\"replaceAll\":boolean}";
         public RiskLevel RiskLevel => RiskLevel.Medium;
 
-        public ToolResult Execute(Dictionary<string, object> arguments)
-        {
-            var path = ReadScriptTool.NormalizePath(ToolArgs.Str(arguments, "path"));
-            if (!ReadScriptTool.IsValidScriptPath(path))
-                return ToolResult.Fail("path must be an Assets/*.cs file.");
-            if (!File.Exists(path))
-                return ToolResult.Fail($"File not found: {path}");
-
-            var current = File.ReadAllText(path, Encoding.UTF8);
-            var currentHash = ReadScriptTool.Hash(current);
-            var expectedHash = ToolArgs.Str(arguments, "expectedHash");
-            if (!string.IsNullOrEmpty(expectedHash) &&
-                !string.Equals(expectedHash, currentHash, StringComparison.OrdinalIgnoreCase))
-            {
-                return ToolResult.Fail(
-                    "File changed since last read (hash mismatch). Call read_script again before patching.",
-                    "Stale patch rejected.");
-            }
-
-            var newContent = ToolArgs.Str(arguments, "content");
-            if (string.IsNullOrEmpty(newContent))
-            {
-                var oldString = ToolArgs.Str(arguments, "oldString");
-                var replacement = ToolArgs.Str(arguments, "newString", "");
-                if (string.IsNullOrEmpty(oldString))
-                    return ToolResult.Fail("Provide content or oldString/newString.");
-
-                if (!current.Contains(oldString))
-                    return ToolResult.Fail("oldString not found in file. Re-read the script and retry.");
-
-                var replaceAll = ToolArgs.Bool(arguments, "replaceAll", false);
-                newContent = replaceAll
-                    ? current.Replace(oldString, replacement)
-                    : ReplaceFirst(current, oldString, replacement);
-            }
-
-            var backup = ChangeTracker.BackupFile(path);
-            File.WriteAllText(path, newContent, Encoding.UTF8);
-            AssetDatabase.ImportAsset(path);
-            AssetDatabase.Refresh();
-
-            return ToolResult.Ok($"Script patched: {path}", new Dictionary<string, object>
-            {
-                ["path"] = path,
-                ["hash"] = ReadScriptTool.Hash(newContent),
-                ["backupPath"] = backup,
-                ["needsCompile"] = true
-            });
-        }
-
-        static string ReplaceFirst(string text, string oldValue, string newValue)
-        {
-            var index = text.IndexOf(oldValue, StringComparison.Ordinal);
-            if (index < 0) return text;
-            return text.Substring(0, index) + newValue + text.Substring(index + oldValue.Length);
-        }
+        public ToolResult Execute(Dictionary<string, object> arguments) => ScriptPatchApplier.Apply(arguments);
     }
 }
