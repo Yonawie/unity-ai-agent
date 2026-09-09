@@ -65,9 +65,13 @@ namespace UnityAgent.Editor.Diff
 
         readonly struct DiffOp
         {
-            public DiffOpKind Kind;
-            public string Line;
-            public DiffOp(DiffOpKind kind, string line) { Kind = kind; Line = line; }
+            public readonly DiffOpKind Kind;
+            public readonly string Line;
+            public DiffOp(DiffOpKind kind, string line)
+            {
+                Kind = kind;
+                Line = line;
+            }
         }
 
         static List<DiffOp> MyersDiff(string[] a, string[] b)
