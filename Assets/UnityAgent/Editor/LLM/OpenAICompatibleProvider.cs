@@ -202,17 +202,17 @@ namespace UnityAgent.Editor.LLM
 
                 var root = AgentJson.ParseObject(raw);
                 var choices = AgentJson.GetArray(root, "choices");
-                string content = null;
+                string responseContent = null;
                 if (choices != null && choices.Count > 0 && choices[0] is Dictionary<string, object> choice)
                 {
                     var message = AgentJson.GetObject(choice, "message");
-                    content = AgentJson.GetString(message, "content");
+                    responseContent = AgentJson.GetString(message, "content");
                 }
 
                 return new LLMResponse
                 {
                     Success = true,
-                    Content = content ?? raw,
+                    Content = responseContent ?? raw,
                     Raw = raw,
                     DurationMs = sw.ElapsedMilliseconds
                 };
