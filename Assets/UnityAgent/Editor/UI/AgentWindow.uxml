@@ -1,56 +1,75 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <Style src="AgentWindow.uss" />
     <ui:VisualElement name="root" class="root">
-        <ui:VisualElement class="toolbar">
-            <ui:Label text="Unity AI Agent" class="title" />
-            <ui:EnumField name="mode-field" label="Mode" />
-            <ui:Label name="status-label" text="Idle" class="status" />
+
+        <!-- Top bar like Cursor agent header -->
+        <ui:VisualElement class="topbar">
+            <ui:Label text="Agent" class="brand" />
+            <ui:EnumField name="mode-field" class="mode-field" />
+            <ui:VisualElement class="topbar-spacer" />
+            <ui:Label name="status-label" text="Idle" class="status-pill" />
+            <ui:Button name="toggle-activity-button" text="Activity" class="ghost-btn" />
+            <ui:Button name="toggle-settings-button" text="Settings" class="ghost-btn" />
         </ui:VisualElement>
 
-        <ui:VisualElement class="settings-row">
-            <ui:TextField name="provider-field" label="Provider" />
-            <ui:TextField name="base-url-field" label="Base URL" />
-            <ui:TextField name="model-field" label="Model" />
-            <ui:Button name="lmstudio-defaults-button" text="LM Studio" />
-            <ui:Button name="test-connection-button" text="Test Connection" />
+        <!-- Collapsible settings (hidden by default via class) -->
+        <ui:VisualElement name="settings-panel" class="settings-panel settings-hidden">
+            <ui:Label text="Model &amp; connection" class="panel-heading" />
+            <ui:VisualElement class="settings-grid">
+                <ui:TextField name="provider-field" label="Provider" class="setting-field" />
+                <ui:TextField name="base-url-field" label="Base URL" class="setting-field" />
+                <ui:TextField name="model-field" label="Model" class="setting-field" />
+            </ui:VisualElement>
+            <ui:VisualElement class="settings-actions">
+                <ui:Button name="lmstudio-defaults-button" text="LM Studio" class="ghost-btn" />
+                <ui:Button name="test-connection-button" text="Test Connection" class="ghost-btn" />
+                <ui:Label name="error-label" text="" class="error-label" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
-        <ui:VisualElement class="main-split">
-            <ui:VisualElement class="left-pane">
-                <ui:Label text="Conversation" class="section-title" />
-                <ui:ScrollView name="chat-scroll" class="chat-scroll">
-                    <ui:VisualElement name="chat-container" />
+        <ui:VisualElement class="body">
+            <!-- Main chat column -->
+            <ui:VisualElement class="chat-column">
+                <ui:ScrollView name="chat-scroll" class="chat-scroll" horizontal-scroller-visibility="Hidden">
+                    <ui:VisualElement name="chat-container" class="chat-container" />
                 </ui:ScrollView>
-                <ui:VisualElement class="input-row">
-                    <ui:TextField name="input-field" multiline="true" class="input-field" />
-                    <ui:VisualElement class="input-buttons">
-                        <ui:Button name="send-button" text="Send" class="primary" />
-                        <ui:Button name="stop-button" text="Stop" />
-                        <ui:Button name="clear-button" text="Clear" />
-                        <ui:Button name="undo-button" text="Undo Task" />
+
+                <!-- Composer -->
+                <ui:VisualElement class="composer">
+                    <ui:TextField name="input-field" multiline="true" class="composer-input" />
+                    <ui:VisualElement class="composer-footer">
+                        <ui:Label name="composer-hint" text="Enter to send · Shift+Enter for newline" class="hint" />
+                        <ui:VisualElement class="composer-actions">
+                            <ui:Button name="clear-button" text="Clear" class="ghost-btn" />
+                            <ui:Button name="undo-button" text="Undo" class="ghost-btn" />
+                            <ui:Button name="stop-button" text="Stop" class="ghost-btn danger" />
+                            <ui:Button name="send-button" text="Send" class="send-btn" />
+                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
 
-            <ui:VisualElement class="right-pane">
-                <ui:Label text="Plan" class="section-title" />
-                <ui:ScrollView name="plan-scroll" class="side-scroll">
+            <!-- Activity rail (Cursor-like side details) -->
+            <ui:VisualElement name="activity-panel" class="activity-panel">
+                <ui:Label text="Plan" class="panel-heading" />
+                <ui:ScrollView name="plan-scroll" class="activity-scroll">
                     <ui:VisualElement name="plan-container" />
                 </ui:ScrollView>
-                <ui:Label text="Actions" class="section-title" />
-                <ui:ScrollView name="actions-scroll" class="side-scroll">
+
+                <ui:Label text="Tools" class="panel-heading" />
+                <ui:ScrollView name="actions-scroll" class="activity-scroll">
                     <ui:VisualElement name="actions-container" />
                 </ui:ScrollView>
-                <ui:Label text="Changes" class="section-title" />
-                <ui:ScrollView name="changes-scroll" class="side-scroll">
+
+                <ui:Label text="Changes" class="panel-heading" />
+                <ui:ScrollView name="changes-scroll" class="activity-scroll">
                     <ui:VisualElement name="changes-container" />
                 </ui:ScrollView>
-                <ui:Label text="Script Diff" class="section-title" />
-                <ui:ScrollView name="diff-scroll" class="side-scroll">
+
+                <ui:Label text="Diff" class="panel-heading" />
+                <ui:ScrollView name="diff-scroll" class="activity-scroll">
                     <ui:Label name="diff-label" text="No diff yet." class="diff-label" />
                 </ui:ScrollView>
-                <ui:Label text="Errors / Connection" class="section-title" />
-                <ui:Label name="error-label" text="" class="error-label" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
