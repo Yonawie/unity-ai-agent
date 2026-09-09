@@ -289,7 +289,7 @@ namespace UnityAgent.Editor.LLM
         public static ILLMProvider CreateFromSettings()
         {
             var s = AgentSettings.Current;
-            var provider = (s.Provider ?? "Ollama").Trim();
+            var provider = (s.Provider ?? "LMStudio").Trim();
             if (provider.Equals("Claude", StringComparison.OrdinalIgnoreCase) ||
                 provider.Equals("Anthropic", StringComparison.OrdinalIgnoreCase))
             {
@@ -306,14 +306,13 @@ namespace UnityAgent.Editor.LLM
                     : s.BaseUrl, s.Model);
             }
 
-            if (provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ||
-                provider.Equals("OpenAICompatible", StringComparison.OrdinalIgnoreCase) ||
-                provider.Equals("LMStudio", StringComparison.OrdinalIgnoreCase))
+            if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
             {
-                return new OpenAICompatibleProvider(s.BaseUrl, s.Model);
+                return new OllamaProvider(s.BaseUrl, s.Model, s.RequestTimeoutSeconds);
             }
 
-            return new OllamaProvider(s.BaseUrl, s.Model, s.RequestTimeoutSeconds);
+            // LMStudio / OpenAI / OpenAICompatible / default
+            return new OpenAICompatibleProvider(s.BaseUrl, s.Model);
         }
     }
 }

@@ -21,6 +21,7 @@ namespace UnityAgent.Editor.UI
         Label _statusLabel;
         Label _errorLabel;
         TextField _inputField;
+        TextField _providerField;
         TextField _baseUrlField;
         TextField _modelField;
         EnumField _modeField;
@@ -33,6 +34,15 @@ namespace UnityAgent.Editor.UI
             window.titleContent = new GUIContent("AI Agent");
             window.minSize = new Vector2(780, 520);
             window.Show();
+        }
+
+        [MenuItem("Window/AI Agent/Use LM Studio Defaults")]
+        public static void UseLmStudioDefaults()
+        {
+            AgentSettings.ApplyLmStudioDefaults();
+            Debug.Log("[UnityAgent] Applied LM Studio defaults: Provider=LMStudio, BaseUrl=http://127.0.0.1:1234/v1");
+            var window = GetWindow<AgentWindow>();
+            window.CreateGUI();
         }
 
         void OnEnable()
@@ -90,8 +100,10 @@ namespace UnityAgent.Editor.UI
             var mode = new EnumField("Mode", AgentMode.Agent) { name = "mode-field" };
             root.Add(mode);
             root.Add(new Label("Idle") { name = "status-label" });
+            root.Add(new TextField("Provider") { name = "provider-field" });
             root.Add(new TextField("Base URL") { name = "base-url-field" });
             root.Add(new TextField("Model") { name = "model-field" });
+            root.Add(new Button { name = "lmstudio-defaults-button", text = "LM Studio" });
             root.Add(new Button { name = "test-connection-button", text = "Test Connection" });
             var chat = new ScrollView { name = "chat-scroll" };
             chat.Add(new VisualElement { name = "chat-container" });
@@ -125,6 +137,7 @@ namespace UnityAgent.Editor.UI
             _statusLabel = root.Q<Label>("status-label");
             _errorLabel = root.Q<Label>("error-label");
             _inputField = root.Q<TextField>("input-field");
+            _providerField = root.Q<TextField>("provider-field");
             _baseUrlField = root.Q<TextField>("base-url-field");
             _modelField = root.Q<TextField>("model-field");
             _modeField = root.Q<EnumField>("mode-field");
@@ -140,6 +153,16 @@ namespace UnityAgent.Editor.UI
             }
 
             var settings = AgentSettings.Current;
+            if (_providerField != null)
+            {
+                _providerField.value = settings.Provider;
+                _providerField.RegisterValueChangedCallback(evt =>
+                {
+                    AgentSettings.Current.Provider = evt.newValue;
+                    AgentSettings.Save();
+                });
+            }
+
             if (_baseUrlField != null)
             {
                 _baseUrlField.value = settings.BaseUrl;
@@ -159,6 +182,17 @@ namespace UnityAgent.Editor.UI
                     AgentSettings.Save();
                 });
             }
+
+            root.Q<Button>("lmstudio-defaults-button")?.RegisterCallback<ClickEvent>(_ =>
+            {
+                AgentSettings.ApplyLmStudioDefaults();
+                AgentSettings.Reload();
+                var s = AgentSettings.Current;
+                if (_providerField != null) _providerField.SetValueWithoutNotify(s.Provider);
+                if (_baseUrlField != null) _baseUrlField.SetValueWithoutNotify(s.BaseUrl);
+                if (_errorLabel != null)
+                    _errorLabel.text = "LM Studio defaults applied. Check Model name, then Test Connection.";
+            });
 
             root.Q<Button>("send-button")?.RegisterCallback<ClickEvent>(_ => OnSend());
             root.Q<Button>("stop-button")?.RegisterCallback<ClickEvent>(_ => _controller.Stop());

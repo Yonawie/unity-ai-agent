@@ -2,14 +2,22 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 using UnityAgent.Editor.Agent;
-using UnityAgent.Editor.Settings;
 
 namespace UnityAgent.Editor.Settings
 {
     public class AgentSettingsProvider : SettingsProvider
     {
+        static readonly string[] Providers =
+        {
+            "LMStudio",
+            "Ollama",
+            "OpenAICompatible",
+            "OpenAI",
+            "Claude",
+            "Gemini"
+        };
+
         public AgentSettingsProvider()
             : base("Project/AI Agent", SettingsScope.Project)
         {
@@ -20,7 +28,7 @@ namespace UnityAgent.Editor.Settings
         {
             return new AgentSettingsProvider
             {
-                keywords = new HashSet<string>(new[] { "AI", "Agent", "Ollama", "LLM", "UnityAgent" })
+                keywords = new HashSet<string>(new[] { "AI", "Agent", "LMStudio", "Ollama", "LLM", "UnityAgent" })
             };
         }
 
@@ -30,9 +38,39 @@ namespace UnityAgent.Editor.Settings
             EditorGUI.BeginChangeCheck();
 
             EditorGUILayout.LabelField("LLM Provider", EditorStyles.boldLabel);
-            s.Provider = EditorGUILayout.TextField("Provider", s.Provider);
+
+            var providerIndex = Mathf.Max(0, Array.FindIndex(Providers,
+                p => p.Equals(s.Provider, StringComparison.OrdinalIgnoreCase)));
+            if (string.IsNullOrWhiteSpace(s.Provider))
+                providerIndex = 0;
+            else if (Array.FindIndex(Providers, p => p.Equals(s.Provider, StringComparison.OrdinalIgnoreCase)) < 0)
+            {
+                // Keep custom provider as free text below popup
+                providerIndex = -1;
+            }
+
+            var newIndex = EditorGUILayout.Popup("Provider", Math.Max(providerIndex, 0), Providers);
+            if (providerIndex >= 0 || newIndex != 0)
+                s.Provider = Providers[newIndex];
+
+            s.Provider = EditorGUILayout.TextField("Provider (exact)", s.Provider);
             s.BaseUrl = EditorGUILayout.TextField("Base URL", s.BaseUrl);
             s.Model = EditorGUILayout.TextField("Model", s.Model);
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Use LM Studio Defaults"))
+            {
+                AgentSettings.ApplyLmStudioDefaults();
+                GUI.FocusControl(null);
+            }
+            if (GUILayout.Button("Use Ollama Defaults"))
+            {
+                s.Provider = "Ollama";
+                s.BaseUrl = "http://localhost:11434";
+                AgentSettings.Save();
+            }
+            EditorGUILayout.EndHorizontal();
+
             s.Temperature = EditorGUILayout.Slider("Temperature", s.Temperature, 0f, 2f);
             s.MaxContext = EditorGUILayout.IntField("Max Context", s.MaxContext);
             s.MaxAgentSteps = EditorGUILayout.IntField("Max Agent Steps", s.MaxAgentSteps);

@@ -10,8 +10,8 @@ namespace UnityAgent.Editor.Settings
     [Serializable]
     public class AgentSettingsData
     {
-        public string Provider = "Ollama";
-        public string BaseUrl = "http://localhost:11434";
+        public string Provider = "LMStudio";
+        public string BaseUrl = "http://127.0.0.1:1234/v1";
         public string Model = "";
         public float Temperature = 0.2f;
         public int MaxContext = 16000;
@@ -79,31 +79,73 @@ namespace UnityAgent.Editor.Settings
             _cached = Load();
         }
 
+        /// <summary>Force LM Studio defaults and save (overwrites Provider/BaseUrl).</summary>
+        public static void ApplyLmStudioDefaults(bool keepModel = true)
+        {
+            var model = keepModel ? Current.Model : "";
+            _cached ??= new AgentSettingsData();
+            _cached.Provider = "LMStudio";
+            _cached.BaseUrl = "http://127.0.0.1:1234/v1";
+            if (!keepModel) _cached.Model = "";
+            else _cached.Model = model ?? "";
+            Save();
+        }
+
         static AgentSettingsData Load()
         {
+            AgentSettingsData data = null;
             try
             {
                 var projectPath = Path.Combine("ProjectSettings", "UnityAgentSettings.json");
                 if (File.Exists(projectPath))
                 {
                     var obj = AgentJson.ParseObject(File.ReadAllText(projectPath));
-                    if (obj != null) return FromDict(obj);
+                    if (obj != null) data = FromDict(obj);
                 }
             }
             catch { /* fallback */ }
 
-            var json = EditorPrefs.GetString(PrefsKey, string.Empty);
-            if (!string.IsNullOrEmpty(json))
+            if (data == null)
             {
-                try
+                var json = EditorPrefs.GetString(PrefsKey, string.Empty);
+                if (!string.IsNullOrEmpty(json))
                 {
-                    var obj = AgentJson.ParseObject(json);
-                    if (obj != null) return FromDict(obj);
+                    try
+                    {
+                        var obj = AgentJson.ParseObject(json);
+                        if (obj != null) data = FromDict(obj);
+                    }
+                    catch { /* ignore */ }
                 }
-                catch { /* ignore */ }
             }
 
-            return new AgentSettingsData();
+            data ??= new AgentSettingsData();
+            MigrateToLmStudioIfNeeded(data);
+            return data;
+        }
+
+        static void MigrateToLmStudioIfNeeded(AgentSettingsData data)
+        {
+            if (data == null) return;
+            var provider = data.Provider ?? "";
+            var url = data.BaseUrl ?? "";
+
+            // User pointed at LM Studio port but left Ollama provider.
+            var looksLikeLmStudioPort = url.Contains(":1234");
+            var isOllama = provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase);
+            if (isOllama && looksLikeLmStudioPort)
+            {
+                data.Provider = "LMStudio";
+                if (!url.Contains("/v1"))
+                    data.BaseUrl = url.TrimEnd('/') + "/v1";
+                try { SaveWith(data); } catch { /* ignore */ }
+            }
+        }
+
+        static void SaveWith(AgentSettingsData d)
+        {
+            _cached = d;
+            Save();
         }
 
         static System.Collections.Generic.Dictionary<string, object> ToDict(AgentSettingsData d) => new System.Collections.Generic.Dictionary<string, object>
@@ -131,8 +173,8 @@ namespace UnityAgent.Editor.Settings
 
         static AgentSettingsData FromDict(System.Collections.Generic.Dictionary<string, object> o) => new AgentSettingsData
         {
-            Provider = AgentJson.GetString(o, "Provider", "Ollama"),
-            BaseUrl = AgentJson.GetString(o, "BaseUrl", "http://localhost:11434"),
+            Provider = AgentJson.GetString(o, "Provider", "LMStudio"),
+            BaseUrl = AgentJson.GetString(o, "BaseUrl", "http://127.0.0.1:1234/v1"),
             Model = AgentJson.GetString(o, "Model", ""),
             Temperature = AgentJson.GetFloat(o, "Temperature", 0.2f),
             MaxContext = AgentJson.GetInt(o, "MaxContext", 16000),

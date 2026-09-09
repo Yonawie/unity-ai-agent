@@ -8,8 +8,10 @@
         </ui:VisualElement>
 
         <ui:VisualElement class="settings-row">
+            <ui:TextField name="provider-field" label="Provider" />
             <ui:TextField name="base-url-field" label="Base URL" />
             <ui:TextField name="model-field" label="Model" />
+            <ui:Button name="lmstudio-defaults-button" text="LM Studio" />
             <ui:Button name="test-connection-button" text="Test Connection" />
         </ui:VisualElement>
 
