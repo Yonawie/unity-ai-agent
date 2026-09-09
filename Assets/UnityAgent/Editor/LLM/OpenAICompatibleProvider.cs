@@ -111,6 +111,15 @@ namespace UnityAgent.Editor.LLM
                 }
 
                 AgentLogger.Info("Auto-selected LM Studio model: " + model);
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(AgentSettings.Current.Model))
+                    {
+                        AgentSettings.Current.Model = model;
+                        AgentSettings.Save();
+                    }
+                }
+                catch { /* ignore */ }
             }
 
             try

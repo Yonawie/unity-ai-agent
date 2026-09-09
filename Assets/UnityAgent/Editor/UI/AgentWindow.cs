@@ -413,6 +413,7 @@ namespace UnityAgent.Editor.UI
             if (_providerField != null) AgentSettings.Current.Provider = _providerField.value;
             if (_baseUrlField != null) AgentSettings.Current.BaseUrl = _baseUrlField.value;
             if (_modelField != null) AgentSettings.Current.Model = _modelField.value;
+            AgentSettings.Current.EnableStreaming = false;
             AgentSettings.Save();
             RefreshModelChip();
 
