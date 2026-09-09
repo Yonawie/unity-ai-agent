@@ -111,14 +111,38 @@ namespace UnityAgent.Editor.Agent
                 }
 
                 AgentLogger.Info($"Agent step {step + 1}: sending LLM request");
+                session.Messages.Add(AgentMessage.Assistant("… waiting for model …"));
+                onChanged?.Invoke();
+
                 var response = await provider.SendAsync(request, token);
                 session.StreamingText = null;
+
+                // Replace the waiting placeholder with real outcome.
+                if (session.Messages.Count > 0 &&
+                    session.Messages[session.Messages.Count - 1].Role == "assistant" &&
+                    session.Messages[session.Messages.Count - 1].Content == "… waiting for model …")
+                {
+                    session.Messages.RemoveAt(session.Messages.Count - 1);
+                }
+
                 if (!response.Success)
                 {
                     SetStatus(session, AgentStatus.Failed, response.Error, onChanged);
                     session.LastError = response.Error;
                     session.Messages.Add(AgentMessage.Assistant("Error: " + response.Error));
                     SessionPersistence.Save(session);
+                    onChanged?.Invoke();
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(response.Content))
+                {
+                    var emptyError = "Model returned an empty response. Check LM Studio server/model, set Provider=LMStudio, Base URL=http://127.0.0.1:1234/v1, and disable Enable LLM Streaming.";
+                    SetStatus(session, AgentStatus.Failed, emptyError, onChanged);
+                    session.LastError = emptyError;
+                    session.Messages.Add(AgentMessage.Assistant("Error: " + emptyError));
+                    SessionPersistence.Save(session);
+                    onChanged?.Invoke();
                     return;
                 }
 

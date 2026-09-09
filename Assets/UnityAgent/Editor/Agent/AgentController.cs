@@ -175,7 +175,7 @@ namespace UnityAgent.Editor.Agent
             Session.UserRequest = userText;
             Session.Messages.Add(AgentMessage.User(Session.UserRequest));
             Session.Status = AgentStatus.Thinking;
-            Session.StatusDetail = "Starting";
+            Session.StatusDetail = $"Calling {AgentSettings.Current.Provider} ({AgentSettings.Current.Model})";
             Session.LastError = null;
             Session.FixAttempts = 0;
             Session.CurrentStep = 0;
@@ -183,11 +183,10 @@ namespace UnityAgent.Editor.Agent
             Session.ResumeAfterReload = false;
             Session.StreamingText = null;
             if (Session.Plan == null) Session.Plan = new AgentPlan();
-            else if (Session.Status == AgentStatus.Idle || Session.Status == AgentStatus.Completed)
-                Session.Plan = new AgentPlan();
             SessionPersistence.Save(Session);
             SessionChanged?.Invoke();
             AgentLogger.Info("User request: " + Session.UserRequest);
+            AgentLogger.Info($"Provider={AgentSettings.Current.Provider} BaseUrl={AgentSettings.Current.BaseUrl} Model={AgentSettings.Current.Model} Streaming={AgentSettings.Current.EnableStreaming}");
             ContinueRun();
         }
 

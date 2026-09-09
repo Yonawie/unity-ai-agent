@@ -186,11 +186,23 @@ namespace UnityAgent.Editor.LLM
 
                 if (useStream)
                 {
-                    AgentLogger.Llm("response", streamHandler.Content);
+                    var streamed = streamHandler?.Content ?? string.Empty;
+                    AgentLogger.Llm("response", streamed);
+                    if (string.IsNullOrWhiteSpace(streamed))
+                    {
+                        return new LLMResponse
+                        {
+                            Success = false,
+                            Error = "LM Studio/OpenAI returned an empty streamed response. Disable 'Enable LLM Streaming' in Project Settings → AI Agent and try again.",
+                            Raw = streamHandler?.RawText,
+                            DurationMs = sw.ElapsedMilliseconds,
+                            WasStreamed = true
+                        };
+                    }
                     return new LLMResponse
                     {
                         Success = true,
-                        Content = streamHandler.Content,
+                        Content = streamed,
                         Raw = streamHandler.RawText,
                         DurationMs = sw.ElapsedMilliseconds,
                         WasStreamed = true

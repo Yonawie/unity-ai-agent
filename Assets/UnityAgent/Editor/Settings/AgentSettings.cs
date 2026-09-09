@@ -28,7 +28,7 @@ namespace UnityAgent.Editor.Settings
         public bool AllowPlayMode = true;
         public bool AutoApproveMediumRisk = true;
         public bool RequireScriptDiffApproval = false;
-        public bool EnableStreaming = true;
+        public bool EnableStreaming = false;
         public bool EnableVision = true;
     }
 
@@ -86,6 +86,7 @@ namespace UnityAgent.Editor.Settings
             _cached ??= new AgentSettingsData();
             _cached.Provider = "LMStudio";
             _cached.BaseUrl = "http://127.0.0.1:1234/v1";
+            _cached.EnableStreaming = false;
             if (!keepModel) _cached.Model = "";
             else _cached.Model = model ?? "";
             Save();
@@ -138,6 +139,7 @@ namespace UnityAgent.Editor.Settings
                 data.Provider = "LMStudio";
                 if (!url.Contains("/v1"))
                     data.BaseUrl = url.TrimEnd('/') + "/v1";
+                data.EnableStreaming = false;
                 try { SaveWith(data); } catch { /* ignore */ }
             }
         }
@@ -190,7 +192,7 @@ namespace UnityAgent.Editor.Settings
             AllowPlayMode = AgentJson.GetBool(o, "AllowPlayMode", true),
             AutoApproveMediumRisk = AgentJson.GetBool(o, "AutoApproveMediumRisk", true),
             RequireScriptDiffApproval = AgentJson.GetBool(o, "RequireScriptDiffApproval", false),
-            EnableStreaming = AgentJson.GetBool(o, "EnableStreaming", true),
+            EnableStreaming = AgentJson.GetBool(o, "EnableStreaming", false),
             EnableVision = AgentJson.GetBool(o, "EnableVision", true)
         };
     }

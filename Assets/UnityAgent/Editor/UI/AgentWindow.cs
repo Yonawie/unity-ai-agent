@@ -36,13 +36,16 @@ namespace UnityAgent.Editor.UI
             window.Show();
         }
 
-        [MenuItem("Window/AI Agent/Use LM Studio Defaults")]
+        [MenuItem("Tools/AI Agent/Use LM Studio Defaults")]
         public static void UseLmStudioDefaults()
         {
             AgentSettings.ApplyLmStudioDefaults();
             Debug.Log("[UnityAgent] Applied LM Studio defaults: Provider=LMStudio, BaseUrl=http://127.0.0.1:1234/v1");
-            var window = GetWindow<AgentWindow>();
-            window.CreateGUI();
+            if (HasOpenInstances<AgentWindow>())
+            {
+                var window = GetWindow<AgentWindow>();
+                window.CreateGUI();
+            }
         }
 
         void OnEnable()
@@ -238,9 +241,28 @@ namespace UnityAgent.Editor.UI
         {
             if (_inputField == null) return;
             var text = _inputField.value;
-            if (string.IsNullOrWhiteSpace(text)) return;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                if (_errorLabel != null)
+                    _errorLabel.text = "Введите текст команды перед Send.";
+                return;
+            }
+
+            // Persist latest UI settings before request.
+            if (_providerField != null) AgentSettings.Current.Provider = _providerField.value;
+            if (_baseUrlField != null) AgentSettings.Current.BaseUrl = _baseUrlField.value;
+            if (_modelField != null) AgentSettings.Current.Model = _modelField.value;
+            AgentSettings.Save();
+
+            if (_errorLabel != null)
+            {
+                _errorLabel.text =
+                    $"Sending via {AgentSettings.Current.Provider} → {AgentSettings.Current.BaseUrl} / model={AgentSettings.Current.Model}";
+            }
+
             _inputField.value = string.Empty;
             _controller.Send(text);
+            RefreshAll();
         }
 
         void OnSessionChanged()
