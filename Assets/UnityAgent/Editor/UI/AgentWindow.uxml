@@ -2,19 +2,19 @@
     <Style src="AgentWindow.uss" />
     <ui:VisualElement name="root" class="root">
 
-        <!-- Top bar like Cursor agent header -->
+        <!-- Thin header like Cursor Agent -->
         <ui:VisualElement class="topbar">
             <ui:Label text="Agent" class="brand" />
-            <ui:EnumField name="mode-field" class="mode-field" />
+            <ui:Label name="model-chip" text="" class="model-chip" />
             <ui:VisualElement class="topbar-spacer" />
             <ui:Label name="status-label" text="Idle" class="status-pill" />
-            <ui:Button name="toggle-activity-button" text="Activity" class="ghost-btn" />
-            <ui:Button name="toggle-settings-button" text="Settings" class="ghost-btn" />
+            <ui:Button name="toggle-activity-button" text="Details" class="ghost-btn" />
+            <ui:Button name="toggle-settings-button" text="···" class="icon-btn" tooltip="Settings" />
         </ui:VisualElement>
 
-        <!-- Collapsible settings (hidden by default via class) -->
+        <!-- Collapsible connection settings -->
         <ui:VisualElement name="settings-panel" class="settings-panel settings-hidden">
-            <ui:Label text="Model &amp; connection" class="panel-heading" />
+            <ui:Label text="Connection" class="panel-heading" />
             <ui:VisualElement class="settings-grid">
                 <ui:TextField name="provider-field" label="Provider" class="setting-field" />
                 <ui:TextField name="base-url-field" label="Base URL" class="setting-field" />
@@ -34,42 +34,51 @@
                     <ui:VisualElement name="chat-container" class="chat-container" />
                 </ui:ScrollView>
 
-                <!-- Composer -->
+                <!-- Composer (Cursor-style) -->
                 <ui:VisualElement class="composer">
                     <ui:TextField name="input-field" multiline="true" class="composer-input" />
                     <ui:VisualElement class="composer-footer">
-                        <ui:Label name="composer-hint" text="Enter to send · Shift+Enter for newline" class="hint" />
+                        <ui:EnumField name="mode-field" class="mode-field" />
+                        <ui:Label name="composer-hint" text="Enter to send · Shift+Enter newline" class="hint" />
                         <ui:VisualElement class="composer-actions">
                             <ui:Button name="clear-button" text="Clear" class="ghost-btn" />
                             <ui:Button name="undo-button" text="Undo" class="ghost-btn" />
                             <ui:Button name="stop-button" text="Stop" class="ghost-btn danger" />
-                            <ui:Button name="send-button" text="Send" class="send-btn" />
+                            <ui:Button name="send-button" text="↑" class="send-btn" tooltip="Send" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
 
-            <!-- Activity rail (Cursor-like side details) -->
-            <ui:VisualElement name="activity-panel" class="activity-panel">
-                <ui:Label text="Plan" class="panel-heading" />
-                <ui:ScrollView name="plan-scroll" class="activity-scroll">
-                    <ui:VisualElement name="plan-container" />
-                </ui:ScrollView>
+            <!-- Details rail with tabs -->
+            <ui:VisualElement name="activity-panel" class="activity-panel activity-hidden">
+                <ui:VisualElement class="activity-tabs">
+                    <ui:Button name="tab-plan" text="Plan" class="tab-btn tab-active" />
+                    <ui:Button name="tab-tools" text="Tools" class="tab-btn" />
+                    <ui:Button name="tab-changes" text="Changes" class="tab-btn" />
+                    <ui:Button name="tab-diff" text="Diff" class="tab-btn" />
+                </ui:VisualElement>
 
-                <ui:Label text="Tools" class="panel-heading" />
-                <ui:ScrollView name="actions-scroll" class="activity-scroll">
-                    <ui:VisualElement name="actions-container" />
-                </ui:ScrollView>
-
-                <ui:Label text="Changes" class="panel-heading" />
-                <ui:ScrollView name="changes-scroll" class="activity-scroll">
-                    <ui:VisualElement name="changes-container" />
-                </ui:ScrollView>
-
-                <ui:Label text="Diff" class="panel-heading" />
-                <ui:ScrollView name="diff-scroll" class="activity-scroll">
-                    <ui:Label name="diff-label" text="No diff yet." class="diff-label" />
-                </ui:ScrollView>
+                <ui:VisualElement name="tab-panel-plan" class="tab-panel">
+                    <ui:ScrollView name="plan-scroll" class="activity-scroll-fill">
+                        <ui:VisualElement name="plan-container" />
+                    </ui:ScrollView>
+                </ui:VisualElement>
+                <ui:VisualElement name="tab-panel-tools" class="tab-panel tab-panel-hidden">
+                    <ui:ScrollView name="actions-scroll" class="activity-scroll-fill">
+                        <ui:VisualElement name="actions-container" />
+                    </ui:ScrollView>
+                </ui:VisualElement>
+                <ui:VisualElement name="tab-panel-changes" class="tab-panel tab-panel-hidden">
+                    <ui:ScrollView name="changes-scroll" class="activity-scroll-fill">
+                        <ui:VisualElement name="changes-container" />
+                    </ui:ScrollView>
+                </ui:VisualElement>
+                <ui:VisualElement name="tab-panel-diff" class="tab-panel tab-panel-hidden">
+                    <ui:ScrollView name="diff-scroll" class="activity-scroll-fill">
+                        <ui:Label name="diff-label" text="No diff yet." class="diff-label" />
+                    </ui:ScrollView>
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

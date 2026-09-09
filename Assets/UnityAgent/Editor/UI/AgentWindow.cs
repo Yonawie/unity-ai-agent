@@ -17,22 +17,43 @@ namespace UnityAgent.Editor.UI
         VisualElement _planContainer;
         VisualElement _actionsContainer;
         VisualElement _changesContainer;
+        VisualElement _settingsPanel;
+        VisualElement _activityPanel;
+        VisualElement _tabPlan;
+        VisualElement _tabTools;
+        VisualElement _tabChanges;
+        VisualElement _tabDiff;
+        Button _tabBtnPlan;
+        Button _tabBtnTools;
+        Button _tabBtnChanges;
+        Button _tabBtnDiff;
         Label _diffLabel;
         Label _statusLabel;
         Label _errorLabel;
+        Label _modelChip;
         TextField _inputField;
         TextField _providerField;
         TextField _baseUrlField;
         TextField _modelField;
         EnumField _modeField;
         bool _uiBound;
+        bool _settingsOpen;
+        bool _activityOpen;
+        string _activeTab = "plan";
+
+        static readonly string[] Suggestions =
+        {
+            "Create a cube named TestCube at 0,1,0",
+            "Add Rigidbody and a WASD movement script",
+            "Make a simple Canvas with a Play button"
+        };
 
         [MenuItem("Window/AI Agent")]
         public static void Open()
         {
             var window = GetWindow<AgentWindow>();
-            window.titleContent = new GUIContent("AI Agent");
-            window.minSize = new Vector2(780, 520);
+            window.titleContent = new GUIContent("Agent");
+            window.minSize = new Vector2(640, 520);
             window.Show();
         }
 
@@ -65,6 +86,7 @@ namespace UnityAgent.Editor.UI
         {
             var root = rootVisualElement;
             root.Clear();
+            _uiBound = false;
 
             var uxmlPath = FindAssetPath("AgentWindow.uxml");
             var ussPath = FindAssetPath("AgentWindow.uss");
@@ -94,39 +116,71 @@ namespace UnityAgent.Editor.UI
             }
 
             BindUi(root);
+            ApplyPanelVisibility();
+            ShowTab(_activeTab);
             RefreshAll();
         }
 
         void BuildFallbackUi(VisualElement root)
         {
-            root.Add(new Label("Unity AI Agent") { name = "title" });
-            var mode = new EnumField("Mode", AgentMode.Agent) { name = "mode-field" };
-            root.Add(mode);
-            root.Add(new Label("Idle") { name = "status-label" });
-            root.Add(new TextField("Provider") { name = "provider-field" });
-            root.Add(new TextField("Base URL") { name = "base-url-field" });
-            root.Add(new TextField("Model") { name = "model-field" });
-            root.Add(new Button { name = "lmstudio-defaults-button", text = "LM Studio" });
-            root.Add(new Button { name = "test-connection-button", text = "Test Connection" });
+            var shell = new VisualElement { name = "root" };
+            shell.AddToClassList("root");
+            root.Add(shell);
+
+            shell.Add(new Label("Agent") { name = "brand" });
+            shell.Add(new Label { name = "model-chip" });
+            shell.Add(new Label("Idle") { name = "status-label" });
+            shell.Add(new Button { name = "toggle-settings-button", text = "Settings" });
+            shell.Add(new Button { name = "toggle-activity-button", text = "Details" });
+
+            var settings = new VisualElement { name = "settings-panel" };
+            settings.Add(new TextField("Provider") { name = "provider-field" });
+            settings.Add(new TextField("Base URL") { name = "base-url-field" });
+            settings.Add(new TextField("Model") { name = "model-field" });
+            settings.Add(new Button { name = "lmstudio-defaults-button", text = "LM Studio" });
+            settings.Add(new Button { name = "test-connection-button", text = "Test Connection" });
+            settings.Add(new Label { name = "error-label" });
+            shell.Add(settings);
+
             var chat = new ScrollView { name = "chat-scroll" };
             chat.Add(new VisualElement { name = "chat-container" });
-            root.Add(chat);
-            root.Add(new TextField { name = "input-field", multiline = true });
-            root.Add(new Button { name = "send-button", text = "Send" });
-            root.Add(new Button { name = "stop-button", text = "Stop" });
-            root.Add(new Button { name = "clear-button", text = "Clear" });
-            root.Add(new Button { name = "undo-button", text = "Undo Task" });
+            shell.Add(chat);
+
+            shell.Add(new EnumField(AgentMode.Agent) { name = "mode-field" });
+            shell.Add(new TextField { name = "input-field", multiline = true });
+            shell.Add(new Button { name = "send-button", text = "Send" });
+            shell.Add(new Button { name = "stop-button", text = "Stop" });
+            shell.Add(new Button { name = "clear-button", text = "Clear" });
+            shell.Add(new Button { name = "undo-button", text = "Undo" });
+
+            var activity = new VisualElement { name = "activity-panel" };
+            activity.Add(new Button { name = "tab-plan", text = "Plan" });
+            activity.Add(new Button { name = "tab-tools", text = "Tools" });
+            activity.Add(new Button { name = "tab-changes", text = "Changes" });
+            activity.Add(new Button { name = "tab-diff", text = "Diff" });
+
+            var planPanel = new VisualElement { name = "tab-panel-plan" };
             var plan = new ScrollView { name = "plan-scroll" };
             plan.Add(new VisualElement { name = "plan-container" });
-            root.Add(plan);
+            planPanel.Add(plan);
+            activity.Add(planPanel);
+
+            var toolsPanel = new VisualElement { name = "tab-panel-tools" };
             var actions = new ScrollView { name = "actions-scroll" };
             actions.Add(new VisualElement { name = "actions-container" });
-            root.Add(actions);
+            toolsPanel.Add(actions);
+            activity.Add(toolsPanel);
+
+            var changesPanel = new VisualElement { name = "tab-panel-changes" };
             var changes = new ScrollView { name = "changes-scroll" };
             changes.Add(new VisualElement { name = "changes-container" });
-            root.Add(changes);
-            root.Add(new Label("No diff yet.") { name = "diff-label" });
-            root.Add(new Label { name = "error-label" });
+            changesPanel.Add(changes);
+            activity.Add(changesPanel);
+
+            var diffPanel = new VisualElement { name = "tab-panel-diff" };
+            diffPanel.Add(new Label("No diff yet.") { name = "diff-label" });
+            activity.Add(diffPanel);
+            shell.Add(activity);
         }
 
         void BindUi(VisualElement root)
@@ -136,18 +190,35 @@ namespace UnityAgent.Editor.UI
             _planContainer = root.Q<VisualElement>("plan-container");
             _actionsContainer = root.Q<VisualElement>("actions-container");
             _changesContainer = root.Q<VisualElement>("changes-container");
+            _settingsPanel = root.Q<VisualElement>("settings-panel");
+            _activityPanel = root.Q<VisualElement>("activity-panel");
+            _tabPlan = root.Q("tab-panel-plan");
+            _tabTools = root.Q("tab-panel-tools");
+            _tabChanges = root.Q("tab-panel-changes");
+            _tabDiff = root.Q("tab-panel-diff");
+            _tabBtnPlan = root.Q<Button>("tab-plan");
+            _tabBtnTools = root.Q<Button>("tab-tools");
+            _tabBtnChanges = root.Q<Button>("tab-changes");
+            _tabBtnDiff = root.Q<Button>("tab-diff");
             _diffLabel = root.Q<Label>("diff-label");
             _statusLabel = root.Q<Label>("status-label");
             _errorLabel = root.Q<Label>("error-label");
+            _modelChip = root.Q<Label>("model-chip");
             _inputField = root.Q<TextField>("input-field");
             _providerField = root.Q<TextField>("provider-field");
             _baseUrlField = root.Q<TextField>("base-url-field");
             _modelField = root.Q<TextField>("model-field");
             _modeField = root.Q<EnumField>("mode-field");
 
+            if (_inputField != null)
+            {
+                // Placeholder-like hint via tooltip; UI Toolkit TextField has no built-in placeholder in older Unity.
+                _inputField.tooltip = "Plan, search, build anything in Unity…";
+            }
+
             if (_modeField != null)
             {
-                _modeField.Init(_controller.Session.Mode);
+                _modeField.Init(_controller.Session?.Mode ?? AgentMode.Agent);
                 _modeField.RegisterValueChangedCallback(evt =>
                 {
                     if (evt.newValue is AgentMode mode)
@@ -156,45 +227,46 @@ namespace UnityAgent.Editor.UI
             }
 
             var settings = AgentSettings.Current;
-            if (_providerField != null)
+            BindSettingField(_providerField, settings.Provider, v =>
             {
-                _providerField.value = settings.Provider;
-                _providerField.RegisterValueChangedCallback(evt =>
-                {
-                    AgentSettings.Current.Provider = evt.newValue;
-                    AgentSettings.Save();
-                });
-            }
+                AgentSettings.Current.Provider = v;
+                RefreshModelChip();
+            });
+            BindSettingField(_baseUrlField, settings.BaseUrl, v => AgentSettings.Current.BaseUrl = v);
+            BindSettingField(_modelField, settings.Model, v =>
+            {
+                AgentSettings.Current.Model = v;
+                RefreshModelChip();
+            });
 
-            if (_baseUrlField != null)
+            root.Q<Button>("toggle-settings-button")?.RegisterCallback<ClickEvent>(_ =>
             {
-                _baseUrlField.value = settings.BaseUrl;
-                _baseUrlField.RegisterValueChangedCallback(evt =>
-                {
-                    AgentSettings.Current.BaseUrl = evt.newValue;
-                    AgentSettings.Save();
-                });
-            }
+                _settingsOpen = !_settingsOpen;
+                ApplyPanelVisibility();
+            });
+            root.Q<Button>("toggle-activity-button")?.RegisterCallback<ClickEvent>(_ =>
+            {
+                _activityOpen = !_activityOpen;
+                ApplyPanelVisibility();
+            });
 
-            if (_modelField != null)
-            {
-                _modelField.value = settings.Model;
-                _modelField.RegisterValueChangedCallback(evt =>
-                {
-                    AgentSettings.Current.Model = evt.newValue;
-                    AgentSettings.Save();
-                });
-            }
+            _tabBtnPlan?.RegisterCallback<ClickEvent>(_ => ShowTab("plan"));
+            _tabBtnTools?.RegisterCallback<ClickEvent>(_ => ShowTab("tools"));
+            _tabBtnChanges?.RegisterCallback<ClickEvent>(_ => ShowTab("changes"));
+            _tabBtnDiff?.RegisterCallback<ClickEvent>(_ => ShowTab("diff"));
 
             root.Q<Button>("lmstudio-defaults-button")?.RegisterCallback<ClickEvent>(_ =>
             {
                 AgentSettings.ApplyLmStudioDefaults();
                 AgentSettings.Reload();
                 var s = AgentSettings.Current;
-                if (_providerField != null) _providerField.SetValueWithoutNotify(s.Provider);
-                if (_baseUrlField != null) _baseUrlField.SetValueWithoutNotify(s.BaseUrl);
+                _providerField?.SetValueWithoutNotify(s.Provider);
+                _baseUrlField?.SetValueWithoutNotify(s.BaseUrl);
                 if (_errorLabel != null)
-                    _errorLabel.text = "LM Studio defaults applied. Check Model name, then Test Connection.";
+                    _errorLabel.text = "LM Studio defaults applied. Check model, then Test Connection.";
+                _settingsOpen = true;
+                ApplyPanelVisibility();
+                RefreshModelChip();
             });
 
             root.Q<Button>("send-button")?.RegisterCallback<ClickEvent>(_ => OnSend());
@@ -206,22 +278,22 @@ namespace UnityAgent.Editor.UI
             });
             root.Q<Button>("undo-button")?.RegisterCallback<ClickEvent>(_ =>
             {
-                if (_controller.TryUndo(out var msg))
-                    _errorLabel.text = msg;
-                else
-                    _errorLabel.text = msg;
+                _controller.TryUndo(out var msg);
+                if (_errorLabel != null) _errorLabel.text = msg;
+                _settingsOpen = true;
+                ApplyPanelVisibility();
             });
             root.Q<Button>("test-connection-button")?.RegisterCallback<ClickEvent>(async _ =>
             {
-                _errorLabel.text = "Testing connection…";
+                if (_errorLabel != null) _errorLabel.text = "Testing connection…";
                 try
                 {
                     var result = await _controller.TestConnectionAsync();
-                    _errorLabel.text = result;
+                    if (_errorLabel != null) _errorLabel.text = result;
                 }
                 catch (Exception ex)
                 {
-                    _errorLabel.text = "ERROR: " + ex.Message;
+                    if (_errorLabel != null) _errorLabel.text = "ERROR: " + ex.Message;
                 }
             });
 
@@ -235,6 +307,65 @@ namespace UnityAgent.Editor.UI
             });
 
             _uiBound = true;
+            RefreshModelChip();
+        }
+
+        static void BindSettingField(TextField field, string value, Action<string> assign)
+        {
+            if (field == null) return;
+            field.value = value ?? string.Empty;
+            field.RegisterValueChangedCallback(evt =>
+            {
+                assign(evt.newValue);
+                AgentSettings.Save();
+            });
+        }
+
+        void ApplyPanelVisibility()
+        {
+            if (_settingsPanel != null)
+            {
+                if (_settingsOpen) _settingsPanel.RemoveFromClassList("settings-hidden");
+                else _settingsPanel.AddToClassList("settings-hidden");
+            }
+
+            if (_activityPanel != null)
+            {
+                if (_activityOpen) _activityPanel.RemoveFromClassList("activity-hidden");
+                else _activityPanel.AddToClassList("activity-hidden");
+            }
+        }
+
+        void ShowTab(string tab)
+        {
+            _activeTab = tab ?? "plan";
+            SetTabVisible(_tabPlan, _tabBtnPlan, _activeTab == "plan");
+            SetTabVisible(_tabTools, _tabBtnTools, _activeTab == "tools");
+            SetTabVisible(_tabChanges, _tabBtnChanges, _activeTab == "changes");
+            SetTabVisible(_tabDiff, _tabBtnDiff, _activeTab == "diff");
+        }
+
+        static void SetTabVisible(VisualElement panel, Button button, bool active)
+        {
+            if (panel != null)
+            {
+                if (active) panel.RemoveFromClassList("tab-panel-hidden");
+                else panel.AddToClassList("tab-panel-hidden");
+            }
+
+            if (button == null) return;
+            if (active) button.AddToClassList("tab-active");
+            else button.RemoveFromClassList("tab-active");
+        }
+
+        void RefreshModelChip()
+        {
+            if (_modelChip == null) return;
+            var s = AgentSettings.Current;
+            var model = string.IsNullOrEmpty(s.Model) ? "no model" : s.Model;
+            var provider = string.IsNullOrEmpty(s.Provider) ? "?" : s.Provider;
+            _modelChip.text = $"{provider} · {model}";
+            _modelChip.tooltip = $"{s.Provider}\n{s.BaseUrl}\n{s.Model}";
         }
 
         void OnSend()
@@ -243,22 +374,17 @@ namespace UnityAgent.Editor.UI
             var text = _inputField.value;
             if (string.IsNullOrWhiteSpace(text))
             {
-                if (_errorLabel != null)
-                    _errorLabel.text = "Введите текст команды перед Send.";
+                _settingsOpen = true;
+                ApplyPanelVisibility();
+                if (_errorLabel != null) _errorLabel.text = "Type a message first.";
                 return;
             }
 
-            // Persist latest UI settings before request.
             if (_providerField != null) AgentSettings.Current.Provider = _providerField.value;
             if (_baseUrlField != null) AgentSettings.Current.BaseUrl = _baseUrlField.value;
             if (_modelField != null) AgentSettings.Current.Model = _modelField.value;
             AgentSettings.Save();
-
-            if (_errorLabel != null)
-            {
-                _errorLabel.text =
-                    $"Sending via {AgentSettings.Current.Provider} → {AgentSettings.Current.BaseUrl} / model={AgentSettings.Current.Model}";
-            }
+            RefreshModelChip();
 
             _inputField.value = string.Empty;
             _controller.Send(text);
@@ -278,18 +404,31 @@ namespace UnityAgent.Editor.UI
 
             if (_statusLabel != null)
             {
-                var queue = _controller.QueuedCount > 0 ? $" | queue:{_controller.QueuedCount}" : "";
+                var queue = _controller.QueuedCount > 0 ? $" · queue {_controller.QueuedCount}" : "";
                 _statusLabel.text = string.IsNullOrEmpty(session.StatusDetail)
                     ? session.Status + queue
-                    : $"{session.Status}: {session.StatusDetail}{queue}";
+                    : $"{session.Status}{queue}";
+                _statusLabel.tooltip = session.StatusDetail ?? session.Status.ToString();
             }
 
             if (_modeField != null && !Equals(_modeField.value, session.Mode))
                 _modeField.SetValueWithoutNotify(session.Mode);
 
-            if (_errorLabel != null)
-                _errorLabel.text = session.LastError ?? _errorLabel.text;
+            if (_errorLabel != null && !string.IsNullOrEmpty(session.LastError))
+            {
+                _errorLabel.text = session.LastError;
+                _settingsOpen = true;
+                ApplyPanelVisibility();
+            }
 
+            // Auto-open Details when there is plan/tools/diff activity.
+            if (!_activityOpen && HasActivity(session))
+            {
+                _activityOpen = true;
+                ApplyPanelVisibility();
+            }
+
+            RefreshModelChip();
             RefreshChat(session);
             RefreshPlan(session);
             RefreshActions(session);
@@ -297,40 +436,127 @@ namespace UnityAgent.Editor.UI
             RefreshDiff();
         }
 
+        static bool HasActivity(AgentSession session)
+        {
+            if (session.Plan != null && session.Plan.Steps != null && session.Plan.Steps.Count > 0)
+                return true;
+            if (session.ActionLog != null && session.ActionLog.Count > 0)
+                return true;
+            if (!string.IsNullOrEmpty(DiffReview.UnifiedDiff))
+                return true;
+            return false;
+        }
+
         void RefreshChat(AgentSession session)
         {
             if (_chatContainer == null) return;
             _chatContainer.Clear();
+
+            var hasVisible = false;
             foreach (var msg in session.Messages)
             {
                 if (msg.Role == "system") continue;
-                var bubble = new VisualElement();
-                bubble.AddToClassList("chat-bubble");
-                if (msg.IsError) bubble.AddToClassList("chat-error");
-                else if (msg.Role == "user") bubble.AddToClassList("chat-user");
-                else if (msg.Role == "tool") bubble.AddToClassList("chat-tool");
-                else bubble.AddToClassList("chat-assistant");
-
-                var role = new Label(msg.Role + (string.IsNullOrEmpty(msg.ToolName) ? "" : $" ({msg.ToolName})"));
-                role.AddToClassList("bubble-role");
-                bubble.Add(role);
-                bubble.Add(new Label(TrimForUi(msg.Content)));
-                _chatContainer.Add(bubble);
+                hasVisible = true;
+                _chatContainer.Add(BuildMessage(msg.Role, msg.ToolName, msg.Content, msg.IsError, streaming: false));
             }
 
             if (!string.IsNullOrEmpty(session.StreamingText))
             {
-                var streamBubble = new VisualElement();
-                streamBubble.AddToClassList("chat-bubble");
-                streamBubble.AddToClassList("chat-assistant");
-                var role = new Label("assistant (streaming…)");
-                role.AddToClassList("bubble-role");
-                streamBubble.Add(role);
-                streamBubble.Add(new Label(TrimForUi(session.StreamingText)));
-                _chatContainer.Add(streamBubble);
+                hasVisible = true;
+                _chatContainer.Add(BuildMessage("assistant", null, session.StreamingText, false, streaming: true));
             }
 
+            if (!hasVisible)
+                _chatContainer.Add(BuildEmptyState());
+
             _chatScroll?.schedule.Execute(() => _chatScroll.scrollOffset = new Vector2(0, float.MaxValue));
+        }
+
+        VisualElement BuildEmptyState()
+        {
+            var box = new VisualElement();
+            box.AddToClassList("chat-empty");
+
+            var title = new Label("What should we build in Unity?");
+            title.AddToClassList("chat-empty-title");
+            box.Add(title);
+
+            var sub = new Label("Ask, plan, or let Agent edit the project through tools.");
+            sub.AddToClassList("chat-empty-sub");
+            box.Add(sub);
+
+            foreach (var suggestion in Suggestions)
+            {
+                var chip = new Button(() =>
+                {
+                    if (_inputField == null) return;
+                    _inputField.value = suggestion;
+                    _inputField.Focus();
+                })
+                {
+                    text = suggestion
+                };
+                chip.AddToClassList("suggestion");
+                box.Add(chip);
+            }
+
+            return box;
+        }
+
+        static VisualElement BuildMessage(string role, string toolName, string content, bool isError, bool streaming)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("msg");
+
+            var displayRole = "Agent";
+            var avatarClass = "msg-avatar-agent";
+            if (isError || string.Equals(role, "assistant", StringComparison.OrdinalIgnoreCase) &&
+                (content?.StartsWith("Error:", StringComparison.OrdinalIgnoreCase) ?? false))
+            {
+                row.AddToClassList("msg-error");
+                displayRole = "Error";
+                avatarClass = "msg-avatar-error";
+            }
+            else if (string.Equals(role, "user", StringComparison.OrdinalIgnoreCase))
+            {
+                row.AddToClassList("msg-user");
+                displayRole = "You";
+                avatarClass = "msg-avatar-user";
+            }
+            else if (string.Equals(role, "tool", StringComparison.OrdinalIgnoreCase))
+            {
+                row.AddToClassList("msg-tool");
+                displayRole = string.IsNullOrEmpty(toolName) ? "Tool" : toolName;
+                avatarClass = "msg-avatar-tool";
+            }
+            else
+            {
+                row.AddToClassList("msg-assistant");
+                if (streaming)
+                    row.AddToClassList("msg-streaming");
+            }
+
+            var header = new VisualElement();
+            header.AddToClassList("msg-header");
+            var avatar = new VisualElement();
+            avatar.AddToClassList("msg-avatar");
+            avatar.AddToClassList(avatarClass);
+            header.Add(avatar);
+            var roleLabel = new Label(displayRole);
+            roleLabel.AddToClassList("msg-role");
+            header.Add(roleLabel);
+            if (streaming)
+            {
+                var meta = new Label("streaming");
+                meta.AddToClassList("msg-meta");
+                header.Add(meta);
+            }
+            row.Add(header);
+
+            var body = new Label(TrimForUi(content));
+            body.AddToClassList("msg-body");
+            row.Add(body);
+            return row;
         }
 
         void RefreshPlan(AgentSession session)
@@ -338,13 +564,25 @@ namespace UnityAgent.Editor.UI
             if (_planContainer == null) return;
             _planContainer.Clear();
             if (!string.IsNullOrEmpty(session.Plan?.Goal))
-                _planContainer.Add(new Label("Goal: " + session.Plan.Goal));
+            {
+                var goal = new Label("Goal: " + session.Plan.Goal);
+                goal.AddToClassList("plan-item");
+                _planContainer.Add(goal);
+            }
 
-            if (session.Plan == null) return;
+            if (session.Plan == null || session.Plan.Steps.Count == 0)
+            {
+                var empty = new Label("No plan yet");
+                empty.AddToClassList("action-item");
+                _planContainer.Add(empty);
+                return;
+            }
+
             for (var i = 0; i < session.Plan.Steps.Count; i++)
             {
                 var step = session.Plan.Steps[i];
-                var row = new Label($"{i + 1}. [{step.Status}] {step.Title}");
+                var row = new Label($"{i + 1}. {step.Title}");
+                row.tooltip = step.Status.ToString();
                 row.AddToClassList("plan-item");
                 if (step.Status == PlanStepStatus.Running) row.AddToClassList("plan-running");
                 if (step.Status == PlanStepStatus.Completed) row.AddToClassList("plan-done");
@@ -357,6 +595,14 @@ namespace UnityAgent.Editor.UI
         {
             if (_actionsContainer == null) return;
             _actionsContainer.Clear();
+            if (session.ActionLog == null || session.ActionLog.Count == 0)
+            {
+                var empty = new Label("No tool calls yet");
+                empty.AddToClassList("action-item");
+                _actionsContainer.Add(empty);
+                return;
+            }
+
             foreach (var action in session.ActionLog)
             {
                 var label = new Label(action);
@@ -409,7 +655,6 @@ namespace UnityAgent.Editor.UI
                     return path;
             }
 
-            // Fallback conventional path
             var candidate = "Assets/UnityAgent/Editor/UI/" + fileName;
             return File.Exists(candidate) ? candidate : null;
         }
