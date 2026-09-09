@@ -73,11 +73,13 @@ namespace UnityAgent.Editor.Agent
 
                 SetStatus(session, AgentStatus.Thinking, $"LLM step {step + 1}/{maxSteps}", onChanged);
 
+                // Do NOT force response_format=json_object for local servers (LM Studio often
+                // returns empty content with it). JSON is still required via the system prompt.
                 var request = new LLMRequest
                 {
                     Model = settings.Model,
                     Temperature = settings.Temperature,
-                    JsonMode = true,
+                    JsonMode = false,
                     SystemPrompt = systemPrompt,
                     Messages = llmMessages.Select(m => new LLMMessage(m.Role, m.Content)).ToList(),
                     OnPartial = chunk =>
@@ -137,7 +139,9 @@ namespace UnityAgent.Editor.Agent
 
                 if (string.IsNullOrWhiteSpace(response.Content))
                 {
-                    var emptyError = "Model returned an empty response. Check LM Studio server/model, set Provider=LMStudio, Base URL=http://127.0.0.1:1234/v1, and disable Enable LLM Streaming.";
+                    var emptyError = string.IsNullOrWhiteSpace(response.Error)
+                        ? "Model returned an empty response. In LM Studio: load a chat model, start the local server, set Model to the exact id, Provider=LMStudio, Base URL=http://127.0.0.1:1234/v1, streaming OFF. Then use Test Connection."
+                        : response.Error;
                     SetStatus(session, AgentStatus.Failed, emptyError, onChanged);
                     session.LastError = emptyError;
                     session.Messages.Add(AgentMessage.Assistant("Error: " + emptyError));

@@ -286,10 +286,40 @@ namespace UnityAgent.Editor.UI
             root.Q<Button>("test-connection-button")?.RegisterCallback<ClickEvent>(async _ =>
             {
                 if (_errorLabel != null) _errorLabel.text = "Testing connection…";
+                _settingsOpen = true;
+                ApplyPanelVisibility();
                 try
                 {
+                    // Persist fields before test.
+                    if (_providerField != null) AgentSettings.Current.Provider = _providerField.value;
+                    if (_baseUrlField != null) AgentSettings.Current.BaseUrl = _baseUrlField.value;
+                    if (_modelField != null) AgentSettings.Current.Model = _modelField.value;
+                    AgentSettings.Current.EnableStreaming = false;
+                    AgentSettings.Save();
+
                     var result = await _controller.TestConnectionAsync();
                     if (_errorLabel != null) _errorLabel.text = result;
+
+                    // If model empty and test succeeded, try to adopt first listed model id from message.
+                    if (string.IsNullOrWhiteSpace(AgentSettings.Current.Model) &&
+                        result != null &&
+                        result.IndexOf("Models loaded:", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var idx = result.IndexOf("Models loaded:", StringComparison.OrdinalIgnoreCase);
+                        var list = result.Substring(idx + "Models loaded:".Length).Trim();
+                        var first = list.Split(',')[0].Trim().TrimEnd('.');
+                        if (!string.IsNullOrWhiteSpace(first) &&
+                            !first.StartsWith("Set ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            AgentSettings.Current.Model = first;
+                            AgentSettings.Save();
+                            _modelField?.SetValueWithoutNotify(first);
+                            if (_errorLabel != null)
+                                _errorLabel.text = result + $" Auto-filled Model={first}";
+                        }
+                    }
+
+                    RefreshModelChip();
                 }
                 catch (Exception ex)
                 {
@@ -405,10 +435,16 @@ namespace UnityAgent.Editor.UI
             if (_statusLabel != null)
             {
                 var queue = _controller.QueuedCount > 0 ? $" · queue {_controller.QueuedCount}" : "";
-                _statusLabel.text = string.IsNullOrEmpty(session.StatusDetail)
+                var detail = session.StatusDetail;
+                if (string.IsNullOrEmpty(detail) && !string.IsNullOrEmpty(session.LastError))
+                    detail = session.LastError;
+                // Keep status short in the pill; full text in tooltip.
+                var shortDetail = detail ?? "";
+                if (shortDetail.Length > 42) shortDetail = shortDetail.Substring(0, 42) + "…";
+                _statusLabel.text = string.IsNullOrEmpty(shortDetail)
                     ? session.Status + queue
-                    : $"{session.Status}{queue}";
-                _statusLabel.tooltip = session.StatusDetail ?? session.Status.ToString();
+                    : $"{session.Status}: {shortDetail}{queue}";
+                _statusLabel.tooltip = detail ?? session.Status.ToString();
             }
 
             if (_modeField != null && !Equals(_modeField.value, session.Mode))
